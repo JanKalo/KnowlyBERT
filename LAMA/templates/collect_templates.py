@@ -120,8 +120,15 @@ def get_entities(relation):
         entityPairs.add((row.s,row.o))
         entity2Labels[row.s] = row.sLabel
         entity2Labels[row.o] = row.oLabel
-        labels2Entity[row.sLabel] = row.s
-        labels2Entity[row.oLabel] = row.o
+
+        if row.sLabel in label2Entities:
+            labels2Entity[row.sLabel].append(row.s)
+        else:
+            label2Entities[row.sLabel] = [row.s]
+        if row.oLabel in label2Entities:
+            labels2Entity[row.oLabel].append(row.o)
+        else:
+            label2Entities[row.oLabel] = [row.o]
 
     return entityPairs, entity2Labels, labels2Entity
 

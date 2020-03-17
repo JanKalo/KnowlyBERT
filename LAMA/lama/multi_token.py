@@ -45,7 +45,7 @@ def find_entities(label_results, entity_labels):
     entity_results = []
     for label, value in label_results:
         if label in entity_labels:
-            entity_results.append((entity_labels[label], value))
+            entity_results.append((label, value))
     entity_results
 
 
