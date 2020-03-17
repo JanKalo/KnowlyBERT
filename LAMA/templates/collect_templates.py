@@ -3,10 +3,9 @@ import sys
 sys.path.append("/home/kalo/conferences/iswc2020/LAMA/lama")
 import pyodbc
 
-from modules import build_model_by_name
-from utils import print_sentence_predictions, load_vocab
 import options as options
 import evaluation_metrics as evaluation_metrics
+import multi_token
 import os
 import dill
 
@@ -63,7 +62,7 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
     for file in os.listdir(input_path):
         with open(os.path.join(input_path,file), "r") as f:
             jsonf = json.load(f)
-        if len(index) >= 500:
+        if len(index) >= 50:
             break
 
         print(len(index))
@@ -100,7 +99,8 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
 
 def get_entities(relation):
     entityPairs = set()
-    entityLabels = {}
+    entity2Labels = {}
+    labels2Entity = {}
     #write query to virtuoso to get entity pairs
 
     data_virtuoso = "DRIVER={{/home/fichtel/virtodbc_r.so}};HOST=134.169.32.169:{};DATABASE=Virtuoso;UID=dba;PWD=F4B656JXqBG".format(1112)
@@ -118,10 +118,12 @@ def get_entities(relation):
             break
 
         entityPairs.add((row.s,row.o))
-        entityLabels[row.s] = row.sLabel
-        entityLabels[row.o] = row.oLabel
+        entity2Labels[row.s] = row.sLabel
+        entity2Labels[row.o] = row.oLabel
+        labels2Entity[row.sLabel] = row.s
+        labels2Entity[row.oLabel] = row.o
 
-    return entityPairs, entityLabels
+    return entityPairs, entity2Labels, labels2Entity
 
 from itertools import islice
 # Implementation of rank1 method from Bouroui et al.
@@ -165,10 +167,10 @@ def rank_sentences_1(model, index_entry, entityPairs, entityLabels):
     return output_rank
 
 
-
+import multi_token as mt
 
 #Rank entities with regard to second metric of paper by
-def rank_sentences_2(model, index_entry, entityPairs, entityLabels):
+def rank_sentences_2(model, index_entry, entityPairs, entityLabels, label2Entities):
 
     orig_sentence = index_entry['sentence']
 
@@ -178,6 +180,8 @@ def rank_sentences_2(model, index_entry, entityPairs, entityLabels):
     sentences = []
     sentences.append(sentence_1)
     sentences.append(sentence_2)
+    #new multi token function
+    print(multi_token.get_multi_token_results(sentence_1, model, label2Entities))
 
     # print("\n{}:".format(model_name))
     original_log_probs_list, [token_ids], [masked_indices] = model.get_batch_generation([sentences], try_cuda=True)
@@ -209,6 +213,7 @@ def rank_sentences_2(model, index_entry, entityPairs, entityLabels):
     overlap_o = len(o_labels.intersection(results2))
     return (overlap_s+overlap_o)
 
+
 if __name__ == '__main__':
     models = {}
     lm = "bert"
@@ -220,12 +225,14 @@ if __name__ == '__main__':
 
 
     for model_name, model in models.items():
-        entities, entityLabels = get_entities("http://www.wikidata.org/prop/direct/P102")
+        entities, entity2Labels, label2Entities = get_entities("http://www.wikidata.org/prop/direct/P36")
         print('Found {} entity pairs for the relation.'.format(len(entities)))
-        index = index_sentences("/home/kalo/TREx", entities, "http://www.wikidata.org/prop/direct/P102", entityLabels)
+        index = index_sentences("/home/kalo/TREx", entities, "http://www.wikidata.org/prop/direct/P36", entity2Labels)
         results = {}
+
         for sentence in index:
-            value = rank_sentences_2(model, sentence, entities, entityLabels)
+
+            value = rank_sentences_2(model, sentence, entities, entity2Labels, label2Entities)
             results[sentence['sentence']] = value
     print(results)
     #rank_sentences_2()

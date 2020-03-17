@@ -9,20 +9,45 @@ import options as options
 import evaluation_metrics as evaluation_metrics
 import os
 import dill
-
+import itertools
 
 
 
 def join_result_lists(results_list):
     #here I need some disambiguation tool
-    i = 0
-    for results in results_list:
-        if i == 0:
-            continue
-            i += 1
-        t = ((result1 + " " + result2) for result1 in results[i]["topk"] for result2 in results[i+1]["topk"])
-        print (t)
-        i += 1
+    joined_results = []
+    for result in results_list:
+        intermediate_topk = []
+        for list in result:
+            i = []
+            for dict in list['topk']:
+                i.append((dict['token_word_form'], dict['log_prob']))
+            intermediate_topk.append(i)
+        a = itertools.product(*intermediate_topk)
+
+        #lets join the pairs to strings now and average the confusion values
+        for multi_token_tuple in a:
+            multi_token_string = ""
+            multi_token_value = 0
+            multi_token_counter = 0.0
+            for token in multi_token_tuple:
+                multi_token_counter += 1.0
+                multi_token_string += token[0]
+                multi_token_string += " "
+                multi_token_value += token[1]
+            multi_token_value = (multi_token_value/multi_token_counter)
+            joined_results.append((multi_token_string.strip(), multi_token_value))
+
+
+    return joined_results
+
+def find_entities(label_results, entity_labels):
+    entity_results = []
+    for label, value in label_results:
+        if label in entity_labels:
+            entity_results.append((entity_labels[label], value))
+    entity_results
+
 
 
 
@@ -30,9 +55,9 @@ def get_results(model, sentence):
 
     #number of tokens
     max_tokens = 3
-
+    result_list = []
     for i in range(1,max_tokens+1):
-        result_list = []
+
         if i != 1:
             sentence = sentence.replace("[MASK]","[MASK] [MASK]", 1)
         print(sentence)
@@ -46,10 +71,21 @@ def get_results(model, sentence):
             results = evaluation_metrics.get_ranking(filtered_log_probs_list[0], masked_indices, model.vocab,
                                                      index_list=index_list)
 
-            result_list.append(results)
-        return result_list
+        result_list.append(results)
+    return result_list
+
+def get_multi_token_results(sentence, model, entity_labels):
+    result_list = get_results(model, sentence)
+    label_results = join_result_lists(result_list)
+    return find_entities(label_results, entity_labels)
+
 
 if __name__ == '__main__':
+
+
+    #read all wikidata labels
+
+    entity_labels = {}
 
     models = {}
     lm = "bert"
@@ -62,4 +98,5 @@ if __name__ == '__main__':
     for model_name, model in models.items():
         sent = "[MASK] is the president of the United States."
         result_list = get_results(model, sent)
-        join_result_lists(result_list)
+        label_results = join_result_lists(result_list)
+        find_entities(label_results, entity_labels)
