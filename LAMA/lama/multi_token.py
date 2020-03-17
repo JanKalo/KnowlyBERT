@@ -46,7 +46,7 @@ def find_entities(label_results, entity_labels):
     for label, value in label_results:
         if label in entity_labels:
             entity_results.append((label, value))
-    entity_results
+    return entity_results
 
 
 
@@ -77,7 +77,8 @@ def get_results(model, sentence):
 def get_multi_token_results(sentence, model, entity_labels):
     result_list = get_results(model, sentence)
     label_results = join_result_lists(result_list)
-    return find_entities(label_results, entity_labels)
+    results = find_entities(label_results, entity_labels)
+    return results
 
 
 if __name__ == '__main__':

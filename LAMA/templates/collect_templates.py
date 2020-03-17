@@ -100,7 +100,7 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
 def get_entities(relation):
     entityPairs = set()
     entity2Labels = {}
-    labels2Entity = {}
+    label2Entities = {}
     #write query to virtuoso to get entity pairs
 
     data_virtuoso = "DRIVER={{/home/fichtel/virtodbc_r.so}};HOST=134.169.32.169:{};DATABASE=Virtuoso;UID=dba;PWD=F4B656JXqBG".format(1112)
@@ -122,15 +122,15 @@ def get_entities(relation):
         entity2Labels[row.o] = row.oLabel
 
         if row.sLabel in label2Entities:
-            labels2Entity[row.sLabel].append(row.s)
+            label2Entities[row.sLabel].append(row.s)
         else:
             label2Entities[row.sLabel] = [row.s]
         if row.oLabel in label2Entities:
-            labels2Entity[row.oLabel].append(row.o)
+            label2Entities[row.oLabel].append(row.o)
         else:
             label2Entities[row.oLabel] = [row.o]
 
-    return entityPairs, entity2Labels, labels2Entity
+    return entityPairs, entity2Labels, label2Entities
 
 from itertools import islice
 # Implementation of rank1 method from Bouroui et al.
@@ -188,27 +188,22 @@ def rank_sentences_2(model, index_entry, entityPairs, entityLabels, label2Entiti
     sentences.append(sentence_1)
     sentences.append(sentence_2)
     #new multi token function
-    print(multi_token.get_multi_token_results(sentence_1, model, label2Entities))
 
     # print("\n{}:".format(model_name))
-    original_log_probs_list, [token_ids], [masked_indices] = model.get_batch_generation([sentences], try_cuda=True)
-
-    index_list = None
-
-    filtered_log_probs_list = original_log_probs_list
-
-    ret = {}
-    # build topk lists for this template and safe in ret1 and ret2
-    if masked_indices and len(masked_indices) > 0:
-        results = evaluation_metrics.get_ranking(filtered_log_probs_list[0], masked_indices, model.vocab,
-                                             index_list=index_list)
+    # original_log_probs_list, [token_ids], [masked_indices] = model.get_batch_generation([sentences], try_cuda=True)
+    # index_list = None
+    # filtered_log_probs_list = original_log_probs_list
+    # ret = {}
+    # if masked_indices and len(masked_indices) > 0:
+    #     results = evaluation_metrics.get_ranking(filtered_log_probs_list[0], masked_indices, model.vocab,
+    #                                          index_list=index_list)
 
     results1 = []
     results2 = []
-    for result in results[0]['topk']:
-        results1.append(result['token_word_form'])
-    for result in results[1]['topk']:
-        results2.append(result['token_word_form'])
+    for result, value in multi_token.get_multi_token_results(sentence_1, model, label2Entities):
+        results1.append(result)
+    for result, value in multi_token.get_multi_token_results(sentence_2, model, label2Entities):
+        results2.append(result)
     #compute the overlap with correct labels
     s_labels = set()
     o_labels = set()
