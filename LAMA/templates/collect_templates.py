@@ -159,9 +159,9 @@ def rank_sentences_1(model, index_entry, entityPairs, entityLabels):
             sys.stdout.write('\r{} / {} '.format(idx, len(entityPairs)))
             sys.stdout.flush()
         for i in range(0,10):
-            if results[0]['topk'][i]['token_word_form'] in correct_e2_labels:
+            if results[0]['topk'][i]['token_word_form'] in correct_e1_labels:
                 output_rank += 1
-            if results[1]['topk'][i]['token_word_form'] in correct_e1_labels:
+            if results[1]['topk'][i]['token_word_form'] in correct_e2_labels:
                 output_rank += 1
 
     return output_rank
@@ -170,12 +170,12 @@ def rank_sentences_1(model, index_entry, entityPairs, entityLabels):
 import multi_token as mt
 
 #Rank entities with regard to second metric of paper by
-def rank_sentences_2(model, index_entry, entityPairs, entityLabels, label2Entities):
+def rank_sentences_2(model, index_entry, entityPairs, entity2Labels, label2Entities):
 
     orig_sentence = index_entry['sentence']
 
-    sentence_1 = orig_sentence.replace(entityLabels[index_entry["entities"][0]], '[MASK]')
-    sentence_2 = orig_sentence.replace(entityLabels[index_entry["entities"][1]], '[MASK]')
+    sentence_1 = orig_sentence.replace(entity2Labels[index_entry["entities"][0]], '[MASK]')
+    sentence_2 = orig_sentence.replace(entity2Labels[index_entry["entities"][1]], '[MASK]')
 
     sentences = []
     sentences.append(sentence_1)
@@ -190,7 +190,6 @@ def rank_sentences_2(model, index_entry, entityPairs, entityLabels, label2Entiti
 
     filtered_log_probs_list = original_log_probs_list
 
-    ret = {}
     # build topk lists for this template and safe in ret1 and ret2
     if masked_indices and len(masked_indices) > 0:
         results = evaluation_metrics.get_ranking(filtered_log_probs_list[0], masked_indices, model.vocab,
@@ -206,34 +205,106 @@ def rank_sentences_2(model, index_entry, entityPairs, entityLabels, label2Entiti
     s_labels = set()
     o_labels = set()
     for (s,o) in entityPairs:
-        s_labels.update(entityLabels[s])
-        o_labels.update(entityLabels[o])
+        s_labels.update(entity2Labels[s])
+        o_labels.update(entity2Labels[o])
 
     overlap_s = len(s_labels.intersection(results1))
     overlap_o = len(o_labels.intersection(results2))
     return (overlap_s+overlap_o)
 
+from difflib import SequenceMatcher
+def similar_string(a, b):
+    return SequenceMatcher(None, a, b).ratio()
+
+import re
+def find_similar_sentences(index, entity2Labels):
+    similar_templates = {}
+    unique_templates = {}
+    filtered_index = []
+    for sentence in index:
+        orig_sentence = sentence["sentence"]
+        subject_object_template = (orig_sentence.replace(entity2Labels[sentence["entities"][0]], '[S]')).replace(entity2Labels[sentence["entities"][1]], '[O]')
+        
+        if subject_object_template not in unique_templates:
+            if not re.match(".*[0-9][0-9][0-9][0-9].*", subject_object_template):
+                unique_templates[subject_object_template] = sentence
+    
+    for template in unique_templates:
+        find_suitable_key_template = False
+        for key_template in similar_templates:
+            if find_suitable_key_template == True:
+                break
+            elif similar_string(key_template, template) > 0.8:
+                find_suitable_key_template = True
+                similar_templates[key_template].append(template)
+            else:
+                for similar_template in similar_templates[key_template]:
+                    if similar_string(similar_template, template) > 0.8:
+                        find_suitable_key_template = True
+                        similar_templates[key_template].append(template)
+                        break
+        if find_suitable_key_template == False:
+            similar_templates[template] = []
+
+    #for sent in similar_templates:
+    #    print("{} --> {}\n".format(sent, similar_templates[sent]))
+    #print(len(index))
+    #print(len(similar_templates))
+    for key_template in similar_templates:
+        shortest_template = key_template
+        for similar in similar_templates[key_template]:
+            if len(similar) < len(shortest_template):
+                shortest_template = similar
+        filtered_index.append(unique_templates[shortest_template])
+    #print(filtered_index)
+    return filtered_index
 
 if __name__ == '__main__':
-    models = {}
     lm = "bert"
+    models = {}
     if os.path.exists("/data/fichtel/lm_builds/model_{}".format(lm)):
-        with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as config_dictionary_file:
-            models[lm] = dill.load(config_dictionary_file)
-            #args = []
-            #models[lm] = build_model_by_name(lm, args)
+        with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as lm_build_file:
+            models[lm] = dill.load(lm_build_file)
 
-
+    prop = "P1412"
     for model_name, model in models.items():
-        entities, entity2Labels, label2Entities = get_entities("http://www.wikidata.org/prop/direct/P36")
-        print('Found {} entity pairs for the relation.'.format(len(entities)))
-        index = index_sentences("/home/kalo/TREx", entities, "http://www.wikidata.org/prop/direct/P36", entity2Labels)
+        if os.path.exists("{}_data".format(prop)):
+            with open("{}_data".format(prop), 'rb') as prop_data_file:
+                prop_data = dill.load(prop_data_file)
+                print("read prop data file")
+                print('Found {} entity pairs for the relation.'.format(len(prop_data["ent"])))
+        else:
+            entities, entity2Labels, label2Entities = get_entities("http://www.wikidata.org/prop/direct/{}".format(prop))
+            print('Found {} entity pairs for the relation.'.format(len(entities)))
+            index = index_sentences("/home/kalo/TREx", entities, "http://www.wikidata.org/prop/direct/{}".format(prop), entity2Labels)
+                    
+            with open("{}_data".format(prop), 'wb') as prop_data_file:
+                prop_data = {}
+                prop_data["ent"] = entities
+                prop_data["ent2Label"] = entity2Labels
+                prop_data["label2ent"] = label2Entities
+                prop_data["index"] = index
+                dill.dump(prop_data, prop_data_file)
+           
         results = {}
 
-        for sentence in index:
+        filtered_index = find_similar_sentences(prop_data["index"], prop_data["ent2Label"])
+        #filtered_index = prop_data["index"]
 
-            value = rank_sentences_2(model, sentence, entities, entity2Labels, label2Entities)
-            results[sentence['sentence']] = value
-    print(results)
-    #rank_sentences_2()
+        for sentence in filtered_index:
+            score = rank_sentences_2(model, sentence, prop_data["ent"] , prop_data["ent2Label"], prop_data["label2ent"])
+            subject_object_template = (sentence["sentence"].replace(prop_data["ent2Label"][sentence["entities"][0]], '[S]')).replace(prop_data["ent2Label"][sentence["entities"][1]], '[O]')
+            results[subject_object_template] = score
+        sorted_results = {k: v for k, v in sorted(results.items(), reverse=True, key=lambda item: item[1])}
+        
+        if os.path.exists("templates.json"):
+            with open("templates.json", "r") as prop_templates_file:
+                prop_templates = json.load(prop_templates_file)
+                prop_templates_file.close()
+                os.remove("templates.json")
+        else:
+            prop_templates = {}
 
+        with open("templates.json", "w") as prop_templates_file:
+            prop_templates[prop] = sorted_results
+            json.dump(prop_templates, prop_templates_file)
