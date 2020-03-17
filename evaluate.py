@@ -554,20 +554,17 @@ def handeling_output(hybrid_output, list_hybrid_log, list_errors, string_random_
     else:
         print("Hybrid returns no results")
 
+import json
 if __name__ == '__main__':
     #parsing the label-ID-dictionary
     entities = {}
-    dicto = open("wikidata/dictio_label_id.txt", "r")
-    lines = dicto.read().split("']\n")
-    for line in lines:
-        key_value = line.split(" ['")
-        if(key_value != ['']):
-            values = key_value[1].split("', '")
-            list_values = []
-            for v in values:
-                if "http://www.wikidata.org/entity/Q" in v:
-                    list_values.append(v)
-                    entities[key_value[0]] = list_values
+    dicto = open("wikidata/dictio_label_id.json", "r")
+    line = dicto.readline().split("\n")[0]
+    while line != "":
+        data = json.loads(line)
+        label = list(data.keys())
+        entities[label[0]] = data[label[0]]
+        line = dicto.readline().split("\n")[0]
     dicto.close()
     print("INFO: Label_ID_Dictio parsed")
 
@@ -607,8 +604,8 @@ if __name__ == '__main__':
     #evaluation test
     port = "1114"
     #file_examples = "examples/personal/test.txt"
-    file_examples_outdated = "examples/personal/all_possible/outdated/alor_True/1114_port_examples_random_200_alor_True.txt"
-    file_examples_random = "examples/personal/all_possible/random/alor_True/random_examples_random_200_alor_True_0.json"
+    file_examples_outdated = "examples/outdated/alor_True/1114_port_examples_random_200_alor_True.txt"
+    file_examples_random = "examples/random/random_examples_random_1_alor_True.json"
     #file_examples = random_examples
     lm = "bert"
     mc = [-7]
@@ -644,7 +641,7 @@ if __name__ == '__main__':
     if correct_parameter(mc, cep, tmc, tmp):
         eval_test2_outdated = [port, file_examples_outdated, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
         eval_test2_random = [port, file_examples_random, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        evaluations.append([None, eval_test2_random])
+        #evaluations.append([None, eval_test2_random])
     else:
         print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
@@ -665,7 +662,7 @@ if __name__ == '__main__':
     if correct_parameter(mc, cep, tmc, tmp):
         eval_test3_outdated = [port, file_examples_outdated, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
         eval_test3_random = [port, file_examples_random, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        evaluations.append([None, eval_test3_random])
+        #evaluations.append([None, eval_test3_random])
     else:
         print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
