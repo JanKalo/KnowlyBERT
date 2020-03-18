@@ -250,7 +250,7 @@ def execute (port, examples_data_filepath, dictio_entities, l, mc, mr, ces, cep,
     try:
         print("start hybrid system")
         l = Lock()
-        pool = Pool(processes=20, initializer=init, initargs=(l,))
+        pool = Pool(processes=1, initializer=init, initargs=(l,))
         results = [pool.apply_async(execute_query, args=(port, items)) for items in list(dictio_examples_random_results.keys())]
         output_first_try = [res.get() for res in results]
         pool.close()
@@ -265,7 +265,7 @@ def execute (port, examples_data_filepath, dictio_entities, l, mc, mr, ces, cep,
         output_retry = []
         if all_retry_queries != []:
             print("Try it again: {}".format(all_retry_queries))
-            pool = Pool(processes=20, initializer=init, initargs=(l,))
+            pool = Pool(processes=1, initializer=init, initargs=(l,))
             results = [pool.apply_async(execute_query, args=(port, items)) for items in list(dictio_examples_random_results.keys())]
             output_retry = [res.get() for res in results]
             pool.close()
