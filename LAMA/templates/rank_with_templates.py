@@ -2,9 +2,13 @@
 import sys
 sys.path.append("/home/kalo/conferences/iswc2020/LAMA/lama")
 
-def readTemplates(input_path):
+def readTemplates():
+    if os.path.exists("templates.json"):
+        with open("templates.json", "r") as prop_templates_file:
+            prop_templates = json.load(prop_templates_file)
+            prop_templates_file.close()
 
-    template_file = open(input_path, 'r')
+    #TODO: Templates irgendwie in eine Datenstruktur werfen, so dass ich gleich damit queries beantworten kann
     template_dict = {}
     for line in template_file:
         relation, dictionary = line.split()
@@ -15,6 +19,7 @@ def readTemplates(input_path):
 
 import multi_token as mt
 def get_ranking(e1, r, e2):
+    merged_ranking = []
     #TODO Rankings in Liste packen
     templates = []
 
@@ -24,10 +29,10 @@ def get_ranking(e1, r, e2):
         sentence = template.replace("")
 
         mt.get_multi_token_results(sentence, model, entity_labels)
-
-
+    return merged_ranking
 import dill
 import os
+
 def load_files():
     if os.path.exists("/data/fichtel/lm_builds/model_{}".format(lm)):
         with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as config_dictionary_file:
