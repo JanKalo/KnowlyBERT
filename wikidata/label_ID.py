@@ -44,11 +44,14 @@ def main():
             continue
     #open a txt-file to save the data
     print("open file...")
-    if os.path.exists("dictio_label_id_new.txt"):
-       os.remove("dictio_label_id_new.txt")
-    file = open("dictio_label_id_new.txt", "w")
-    for keys,values in entities.items():
-        file.write("{} {}\n".format(keys, values))
+    if os.path.exists("dictio_label_id.json"):
+       os.remove("dictio_label_id.json")
+    file = open("dictio_label_id.json", "w")
+    for label in entities:
+        temp = {}
+        temp[label] = entities[label]
+        json.dump(temp, file)
+        file.write("\n")
     file.close()
     print("...result written to txt :)")
 
