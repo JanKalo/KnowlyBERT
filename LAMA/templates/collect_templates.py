@@ -208,11 +208,12 @@ def rank_sentences_2(model, index_entry, entityPairs, entity2Labels, label2Entit
     s_labels = set()
     o_labels = set()
     for (s,o) in entityPairs:
-        s_labels.update(entity2Labels[s])
-        o_labels.update(entity2Labels[o])
+        s_labels.add(entity2Labels[s])
+        o_labels.add(entity2Labels[o])
 
     overlap_s = len(s_labels.intersection(results1))
     overlap_o = len(o_labels.intersection(results2))
+    print(overlap_s+overlap_o)
     return (overlap_s+overlap_o)
 
 from difflib import SequenceMatcher
@@ -269,7 +270,7 @@ if __name__ == '__main__':
         with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as lm_build_file:
             models[lm] = dill.load(lm_build_file)
 
-    prop = "P1412"
+    prop = "P36"
     for model_name, model in models.items():
         if os.path.exists("{}_data".format(prop)):
             with open("{}_data".format(prop), 'rb') as prop_data_file:
