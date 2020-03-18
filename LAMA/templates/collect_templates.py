@@ -227,9 +227,9 @@ if __name__ == '__main__':
 
 
     for model_name, model in models.items():
-        entities, entity2Labels, label2Entities = get_entities("http://www.wikidata.org/prop/direct/P36")
+        entities, entity2Labels, label2Entities = get_entities("http://www.wikidata.org/prop/direct/P39")
         print('Found {} entity pairs for the relation.'.format(len(entities)))
-        index = index_sentences("/home/kalo/TREx", entities, "http://www.wikidata.org/prop/direct/P36", entity2Labels)
+        index = index_sentences("/home/kalo/TREx", entities, "http://www.wikidata.org/prop/direct/P39", entity2Labels)
         results = {}
 
         for sentence in index:

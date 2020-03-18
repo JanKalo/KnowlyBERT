@@ -12,7 +12,6 @@ import dill
 import itertools
 
 
-
 def join_result_lists(results_list):
     #here I need some disambiguation tool
     joined_results = []
