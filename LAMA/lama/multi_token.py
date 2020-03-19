@@ -74,6 +74,7 @@ def get_results(model, sentence):
     return result_list
 
 def get_multi_token_results(sentence, model, entity_labels):
+    #TODO: Not Sorted
     result_list = get_results(model, sentence)
     label_results = join_result_lists(result_list)
     results = find_entities(label_results, entity_labels)

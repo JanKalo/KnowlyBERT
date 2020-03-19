@@ -1,39 +1,121 @@
 
 import sys
 sys.path.append("/home/kalo/conferences/iswc2020/LAMA/lama")
-
+import json
+import multi_token as mt
+from itertools import islice
+import pyodbc
+#TODO: Can be deleted later
 def readTemplates():
     if os.path.exists("templates.json"):
         with open("templates.json", "r") as prop_templates_file:
             prop_templates = json.load(prop_templates_file)
             prop_templates_file.close()
 
-    #TODO: Templates irgendwie in eine Datenstruktur werfen, so dass ich gleich damit queries beantworten kann
-    template_dict = {}
-    for line in template_file:
-        relation, dictionary = line.split()
-        relation_template_dict = eval(dictionary)
-        template_dict[relation] = relation_template_dict
-    return template_dict
+
+    return prop_templates
+
+#TODO: delete later, method just for testing
+def get_entities(relation):
+    entityPairs = set()
+    entity2Labels = {}
+    label2Entities = {}
+    #write query to virtuoso to get entity pairs
+
+    data_virtuoso = "DRIVER={{/home/fichtel/virtodbc_r.so}};HOST=134.169.32.169:{};DATABASE=Virtuoso;UID=dba;PWD=F4B656JXqBG".format(1112)
+    cnxn_current = pyodbc.connect(data_virtuoso)
+    cnxn_current.setdecoding(pyodbc.SQL_CHAR, encoding='utf-8')
+    cnxn_current.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
+    cursor =  cnxn_current.cursor()
+    query = "sparql SELECT DISTINCT ?s ?o ?sLabel ?oLabel WHERE {?s <"+relation+"> ?o. ?s <http://www.w3.org/2000/01/rdf-schema#label> ?sLabel. ?o <http://www.w3.org/2000/01/rdf-schema#label> ?oLabel. FILTER(LANG(?sLabel)=\"en\" and LANG(?oLabel)=\"en\")}"
+    print(query)
+    cursor.execute(query)
+    while True:
+        row = cursor.fetchone()
+
+        if not row:
+            break
+
+        entityPairs.add((row.s,row.o))
+        entity2Labels[row.s] = row.sLabel
+        entity2Labels[row.o] = row.oLabel
+
+        if row.sLabel in label2Entities:
+            label2Entities[row.sLabel].append(row.s)
+        else:
+            label2Entities[row.sLabel] = [row.s]
+        if row.oLabel in label2Entities:
+            label2Entities[row.oLabel].append(row.o)
+        else:
+            label2Entities[row.oLabel] = [row.o]
+
+    return entityPairs, entity2Labels, label2Entities
+
+#TODO: Check whether this method is leading to good results
+#TODO: Maybe include confu
+def merge_rankings(results_per_template):
 
 
-import multi_token as mt
-def get_ranking(e1, r, e2):
+    intermediate_rank = {}
+
+    for results in results_per_template:
+        label_tuple, template_confidence = results
+        for label, confusion in label_tuple:
+            if label in intermediate_rank:
+                #if the new confusion value is better, override the old one
+                if intermediate_rank[label] < confusion:
+                    intermediate_rank[label] = confusion
+            else:
+                intermediate_rank[label] = confusion
+    ordered_results = {k: v for k, v in sorted(intermediate_rank.items(), key=lambda item: item[1], reverse=True)}
+
+
+    return [(k, v) for k, v in dict.items()]
+
+def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templates=10):
+
     merged_ranking = []
-    #TODO Rankings in Liste packen
-    templates = []
+
+    #get rankings for property and sort by confidence ranking
+    templates = templatesDictionary[r]
+    ranked_templates = {k: v for k, v in sorted(templates.items(), key=lambda item: item[1], reverse=True)}
 
     #get results for each template
-    for template in templates:
+    result_per_templates = []
+    for template, confidence in dict(islice(ranked_templates.items(), no_templates)).items():
         #build sentence for query
-        sentence = template.replace("")
 
-        mt.get_multi_token_results(sentence, model, entity_labels)
-    return merged_ranking
+        if e1 == "?":
+            instantiated_template = template.replace("[S]","[MASK]")
+            instantiated_template = instantiated_template.replace("[O]", e2)
+        else:
+            instantiated_template = template.replace("[O]","[MASK]")
+            instantiated_template = instantiated_template.replace("[S]", e1)
+
+        result_per_templates.append((mt.get_multi_token_results(instantiated_template, model, entity_labels), confidence))
+
+
+    return merge_rankings(result_per_templates)
 import dill
 import os
 
-def load_files():
+
+
+
+if __name__ == '__main__':
+
+    lm = "bert"
+    prop = "P36"
+    entity = "Q183"
     if os.path.exists("/data/fichtel/lm_builds/model_{}".format(lm)):
         with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as config_dictionary_file:
             bert = dill.load(config_dictionary_file)
+            #load entity labels
+            entities, entity2Labels, label2Entities = get_entities("http://www.wikidata.org/prop/direct/{}".format(prop))
+
+
+            #get templates
+            template = readTemplates()
+
+            # start ranking
+            get_ranking("http://www.wikidata.org/entity/{}".format(entity),prop,"?", bert, label2Entities, template)
