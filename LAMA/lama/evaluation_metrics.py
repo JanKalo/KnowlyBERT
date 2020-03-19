@@ -9,7 +9,7 @@ import numpy as np
 import scipy
 
 
-def __max_probs_values_indices(masked_indices, log_probs, topk=10):
+def __max_probs_values_indices(masked_indices, log_probs, topk=100):
     result = []
     for i in range(0, len(masked_indices)):
         masked_index = masked_indices[i]

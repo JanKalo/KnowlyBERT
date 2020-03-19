@@ -70,7 +70,7 @@ def merge_rankings(results_per_template):
     ordered_results = {k: v for k, v in sorted(intermediate_rank.items(), key=lambda item: item[1], reverse=True)}
 
 
-    return [(k, v) for k, v in dict.items()]
+    return [(k, v) for k, v in ordered_results.items()]
 
 def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templates=10):
 
@@ -118,4 +118,5 @@ if __name__ == '__main__':
             template = readTemplates()
 
             # start ranking
-            get_ranking("http://www.wikidata.org/entity/{}".format(entity),prop,"?", bert, label2Entities, template)
+            rank = get_ranking(entity2Labels["http://www.wikidata.org/entity/{}".format(entity)],prop,"?", bert, label2Entities, template)
+            print(rank)

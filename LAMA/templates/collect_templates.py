@@ -62,7 +62,7 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
     for file in os.listdir(input_path):
         with open(os.path.join(input_path,file), "r") as f:
             jsonf = json.load(f)
-        if len(index) >= 50:
+        if len(index) >= 500:
             break
 
         print(len(index))
