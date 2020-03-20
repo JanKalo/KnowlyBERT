@@ -50,7 +50,7 @@ def __print_top_k(value_max_probs, index_max_probs, vocab, mask_topk, index_list
     return result, msg
 
 
-def get_ranking(log_probs, masked_indices, vocab, label_index=None, index_list=None, topk=10, P_AT=10,
+def get_ranking(log_probs, masked_indices, vocab, label_index=None, index_list=None, topk=100, P_AT=10,
                 print_generation=True):
     results = []
     for result in __max_probs_values_indices(masked_indices, log_probs, topk=topk):
