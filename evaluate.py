@@ -1,10 +1,10 @@
-import outdated_hybrid
-import random_hybrid
+import hybrid_system
 import sys
 from random import randint
 import time
 import os
 import timeit
+import json
 
 dictio_props = None
 
@@ -328,7 +328,9 @@ def evaluate(output_hybrid, i):
             
     return string_eval, string_eval_props, list_query_assign, perfect_queries, count_perfect_queries, percentage_perfect_queries, bad_queries, count_bad_queries, percentage_bad_queries, props_no_result, no_results, round(no_results/data_amount*100, 2), data_amount, missing, dictio_prop_label_possible_entities
 
-def correct_parameter(mc, cep, tmc, tmp):
+def correct_parameter(mc, cep, tmc, tmp, ts):
+    if ts < 1:
+        return False
     if len(mc) == 1 and len(cep) == 1 and len(tmc) == 1 and len(tmp) == 1:
         return True
     elif len(mc) > 1 and len(cep) == 1 and len(tmc) == 1 and len(tmp) == 1:
@@ -349,7 +351,7 @@ def correct_parameter(mc, cep, tmc, tmp):
     else:
         return False
 
-def write_into_files(i, folder, mc, cep, tmc, tmp, file_evaluation, hybrid_output, list_hybrid_log, list_errors, file_examples):
+def write_into_files(i, folder, mc, cep, tmc, tmp, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter):
     actu_list_hybrid_log = []
     for log in list_hybrid_log:
         actu_list_hybrid_log.append(log[i])
@@ -374,12 +376,8 @@ def write_into_files(i, folder, mc, cep, tmc, tmp, file_evaluation, hybrid_outpu
             error_file.write(err+"\n")
         error_file.close()
     file_log_and_evaluation = open("evaluation/{}/log_eval_{}.txt".format(folder, i), "w")
-    if "txt" in str(file_examples) or "json" in str(file_examples):
-        file_log_and_evaluation.write(file_examples+"\n")
-    else:
-        file_log_and_evaluation.write(random_file_path + ", random_count: "+ str(random_count)+"\n")
-        file_log_and_evaluation.write("Random examples: {}\n".format(random_examples))
-    file_log_and_evaluation.write("Language Model: {}, max_confusion: {}, max_result_LM: {}, cardinality_estimation_sampling: {}, cardinality_estimation_percentage: {}, threshold_method_confusion: {}, threshold_method_number: {}, threshold_method_percentage: {}, whole_sentence: {}, always_prop_classes: {}\n\n".format(lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc))
+    file_log_and_evaluation.write(parameter["queries_path"]+"\n")
+    file_log_and_evaluation.write("Language Model: {}, max_confusion: {}, max_result_LM: {}, cardinality_estimation_sampling: {}, cardinality_estimation_percentage: {}, threshold_method_confusion: {}, threshold_method_number: {}, threshold_method_percentage: {}, whole_sentence: {}, always_prop_classes: {}\n\n".format(parameter["lm"], mc, parameter["mr"], parameter["ces"], cep, tmc, parameter["tmn"], tmp, parameter["ts"], parameter["apc"]))
     if len(actu_list_hybrid_log) == len(list_query_assign):
         for i in range(0, len(actu_list_hybrid_log)):
             file_log_and_evaluation.write(list_query_assign[i]+"\n")
@@ -394,7 +392,7 @@ def write_into_files(i, folder, mc, cep, tmc, tmp, file_evaluation, hybrid_outpu
     file_log_and_evaluation.write("\n"+string_eval_props)
     file_log_and_evaluation.close()
     if file_evaluation:
-        file_evaluation.write("Language Model: {}, max_confusion: {}, max_result_LM: {}, cardinality_estimation_sampling: {}, cardinality_estimation_percentage: {}, threshold_method_confusion: {}, threshold_method_number: {}, threshold_method_percentage: {}, whole_sentence: {}, always_prop_classes: {}\n".format(lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc))
+        file_evaluation.write("Language Model: {}, max_confusion: {}, max_result_LM: {}, cardinality_estimation_sampling: {}, cardinality_estimation_percentage: {}, threshold_method_confusion: {}, threshold_method_number: {}, threshold_method_percentage: {}, whole_sentence: {}, always_prop_classes: {}\n".format(parameter["lm"], mc, parameter["mr"], parameter["ces"], cep, tmc, parameter["tmn"], tmp, parameter["ts"], parameter["apc"]))
         file_evaluation.write(string_evaluation+"\n\n")
         temp_perfect_queries = {}
         for prop in perfect_queries:
@@ -436,163 +434,230 @@ def write_into_files(i, folder, mc, cep, tmc, tmp, file_evaluation, hybrid_outpu
         file_evaluation.write("Bad properties:\n{}\n\n\n".format(bad_props))
 
 
-def handeling_output(hybrid_output, list_hybrid_log, list_errors, string_random_outdated, language_model):
+def handeling_output(parameter, hybrid_output, list_hybrid_log, list_errors, string_random_outdated):
     if hybrid_output != []:
-        if len(mc) == 1 and len(cep) == 1 and len(tmc) == 1 and len(tmp) == 1:
+        if len(parameter["mc"]) == 1 and len(parameter["cep"]) == 1 and len(parameter["cep"]) == 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
-            if ws:
-                os.mkdir("evaluation/{}_ws_true_{}_{}".format(date_time, string_random_outdated, language_model))
-                file_evaluation = open("evaluation/{}_ws_true_{}_{}/eval_ws_true_{}_{}_{}.txt".format(date_time, string_random_outdated, language_model, string_random_outdated, language_model, date_time), "w")
-                folder = "{}_ws_true_{}_{}".format(date_time, string_random_outdated, language_model)
-            else:
-                os.mkdir("evaluation/{}_ws_false_{}_{}".format(date_time, string_random_outdated, language_model))
-                file_evaluation = open("evaluation/{}_ws_false_{}_{}/eval_ws_false_{}_{}_{}.txt".format(date_time, string_random_outdated, language_model, string_random_outdated, language_model, date_time), "w")
-                folder = "{}_ws_false_{}_{}".format(date_time, string_random_outdated, language_model)
-            if "txt" in str(file_examples) or "json" in str(file_examples):
-                file_evaluation.write(file_examples+"\n\n")
-            else:
-                file_evaluation.write(random_file_path + ", random_count: "+ str(random_count)+"\n")
-                file_evaluation.write("Random examples: {}\n\n".format(random_examples))
-            mc_value = mc[0]
-            tp_value = cep[0]
-            tmc_value = tmc[0]
-            tmp_value = tmp[0]
-            write_into_files(0, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, file_examples)
+            os.mkdir("evaluation/{}_ts_{}_{}_{}".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"]))
+            file_evaluation = open("evaluation/{}_ts_{}_{}_{}/eval_ts_{}_{}_{}_{}.txt".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"], parameter["ts"], string_random_outdated, parameter["lm"], date_time), "w")
+            folder = "{}_ts_{}_{}_{}".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"])
+            file_evaluation.write(parameter["queries_path"]+"\n\n")
+            mc_value = parameter["mc"][0]
+            tp_value = parameter["cep"][0]
+            tmc_value = parameter["tmc"][0]
+            tmp_value = parameter["tmp"][0]
+            write_into_files(0, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter)
             file_evaluation.close()
-        elif len(mc) > 1 and len(cep) == 1 and len(tmc) == 1 and len(tmp) == 1:
+        elif len(parameter["mc"]) > 1 and len(parameter["cep"]) == 1 and len(parameter["tmc"]) == 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
-            if ws:
-                os.mkdir("evaluation/{}_mc_ws_true_{}_{}".format(date_time, string_random_outdated, language_model))
-                file_evaluation = open("evaluation/{}_mc_ws_true_{}_{}/eval_mc_ws_true_{}_{}_{}.txt".format(date_time, string_random_outdated, language_model, string_random_outdated, language_model, date_time), "w")
-                folder = "{}_mc_ws_true_{}_{}".format(date_time, string_random_outdated, language_model)
-            else:
-                os.mkdir("evaluation/{}_mc_ws_false_{}_{}".format(date_time, string_random_outdated, language_model))
-                file_evaluation = open("evaluation/{}_mc_ws_false_{}_{}/eval_mc_ws_false_{}_{}_{}.txt".format(date_time, string_random_outdated, language_model, string_random_outdated, language_model, date_time), "w")
-                folder = "{}_mc_ws_false_{}_{}".format(date_time, string_random_outdated, language_model)
-            file_evaluation.write("mc "+str(mc)+"\n")
-            if "txt" in str(file_examples) or "json" in str(file_examples):
-                file_evaluation.write(file_examples+"\n\n")
-            else:
-                file_evaluation.write(random_file_path + ", random_count: "+ str(random_count)+"\n")
-                file_evaluation.write("Random examples: {}\n\n".format(random_examples))
-            tp_value = cep[0]
-            tmc_value = tmc[0]
-            tmp_value = tmp[0]
-            for i in range (0, len(mc)):
-                mc_value = mc[i]
-                write_into_files(i, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, file_examples) 
+            os.mkdir("evaluation/{}_mc_ts_{}_{}_{}".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"]))
+            file_evaluation = open("evaluation/{}_mc_ts_{}_{}_{}/eval_ts_{}_{}_{}_{}.txt".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"], parameter["ts"], string_random_outdated, parameter["lm"], date_time), "w")
+            folder = "{}_mc_ts_{}_{}_{}".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"])
+            file_evaluation.write("mc "+str(parameter["mc"])+"\n")
+            file_evaluation.write(parameter["queries_path"]+"\n\n")
+            tp_value = parameter["cep"][0]
+            tmc_value = parameter["tmc"][0]
+            tmp_value = parameter["tmp"][0]
+            for i in range (0, len(parameter["mc"])):
+                mc_value = parameter["mc"][i]
+                write_into_files(i, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter) 
             file_evaluation.close()
-        elif len(mc) == 1 and len(cep) > 1 and len(tmc) == 1 and len(tmp) == 1:
+        elif len(parameter["mc"]) == 1 and len(parameter["cep"]) > 1 and len(parameter["tmc"]) == 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
-            if ws:
-                os.mkdir("evaluation/{}_tp_ws_true_{}_{}".format(date_time, string_random_outdated, language_model))
-                file_evaluation = open("evaluation/{}_tp_ws_true_{}_{}/eval_tp_ws_true_{}_{}_{}.txt".format(date_time, string_random_outdated, language_model, string_random_outdated, language_model, date_time), "w")
-                folder = "{}_tp_ws_true_{}_{}".format(date_time, string_random_outdated, language_model)
-            else:
-                os.mkdir("evaluation/{}_tp_ws_false_{}_{}".format(date_time, string_random_outdated, language_model))
-                file_evaluation = open("evaluation/{}_tp_ws_false_{}_{}/eval_tp_ws_false_{}_{}_{}.txt".format(date_time, string_random_outdated, language_model, string_random_outdated, language_model, date_time), "w")
-                folder = "{}_tp_ws_false_{}_{}".format(date_time, string_random_outdated, language_model)
-            file_evaluation.write("cep "+str(cep)+"\n")
-            if "txt" in str(file_examples) or "json" in str(file_examples):
-                file_evaluation.write(file_examples+"\n\n")
-            else:
-                file_evaluation.write(random_file_path + ", random_count: "+ str(random_count)+"\n")
-                file_evaluation.write("Random examples: {}\n\n".format(random_examples))
-            mc_value = mc[0]
-            tmc_value = tmc[0]
-            tmp_value = tmp[0]
-            for i in range (0, len(cep)):
-                tp_value = cep[i]
-                write_into_files(i, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, file_examples) 
+            os.mkdir("evaluation/{}_tp_ts_{}_{}_{}".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"]))
+            file_evaluation = open("evaluation/{}_tp_ts_{}_{}_{}/eval_ts_{}_{}_{}_{}.txt".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"], parameter["ts"], string_random_outdated, parameter["lm"], date_time), "w")
+            folder = "{}_tp_ts_{}_{}_{}".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"])
+            file_evaluation.write("cep "+str(parameter["cep"])+"\n")
+            file_evaluation.write(parameter["queries_path"]+"\n\n")
+            mc_value = parameter["mc"][0]
+            tmc_value = parameter["tmc"][0]
+            tmp_value = parameter["tmp"][0]
+            for i in range (0, len(parameter["cep"])):
+                tp_value = parameter["cep"][i]
+                write_into_files(i, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter) 
             file_evaluation.close()
-        elif len(mc) == 1 and len(cep) == 1 and len(tmc) > 1 and len(tmp) == 1:
+        elif len(parameter["mc"]) == 1 and len(parameter["cep"]) == 1 and len(parameter["tmc"]) > 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
-            if ws:
-                os.mkdir("evaluation/{}_tmc_ws_true_{}_{}".format(date_time, string_random_outdated, language_model))
-                file_evaluation = open("evaluation/{}_tmc_ws_true_{}_{}/eval_tmc_ws_true_{}_{}_{}.txt".format(date_time, string_random_outdated, language_model, string_random_outdated, language_model, date_time), "w")
-                folder = "{}_tmc_ws_true_{}_{}".format(date_time, string_random_outdated, language_model)
-            else:
-                os.mkdir("evaluation/{}_tmc_ws_false_{}_{}".format(date_time, string_random_outdated, language_model))
-                file_evaluation = open("evaluation/{}_tmc_ws_false_{}_{}/eval_tmc_ws_false_{}_{}_{}.txt".format(date_time, string_random_outdated, language_model, string_random_outdated, language_model, date_time), "w")
-                folder = "{}_tmc_ws_false_{}_{}".format(date_time, string_random_outdated, language_model)
-            file_evaluation.write("tmc "+str(tmc)+"\n")
-            if "txt" in str(file_examples) or "json" in str(file_examples):
-                file_evaluation.write(file_examples+"\n\n")
-            else:
-                file_evaluation.write(random_file_path + ", random_count: "+ str(random_count)+"\n")
-                file_evaluation.write("Random examples: {}\n\n".format(random_examples))
-            mc_value = mc[0]
-            tp_value = cep[0]
-            tmp_value = tmp[0]
-            for i in range (0, len(tmc)):
-                tmc_value = tmc[i]
-                write_into_files(i, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, file_examples) 
+            os.mkdir("evaluation/{}_tmc_ts_{}_{}_{}".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"]))
+            file_evaluation = open("evaluation/{}_tmc_ts_{}_{}_{}/eval_ts_{}_{}_{}_{}.txt".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"], parameter["ts"], string_random_outdated, parameter["lm"], date_time), "w")
+            folder = "{}_tmc_ts_{}_{}_{}".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"])
+            file_evaluation.write("tmc "+str(parameter["tmc"])+"\n")
+            file_evaluation.write(parameter["queries_path"]+"\n\n")
+            mc_value = parameter["mc"][0]
+            tp_value = parameter["cep"][0]
+            tmp_value = parameter["tmp"][0]
+            for i in range (0, len(parameter["tmc"])):
+                tmc_value = parameter["tmc"][i]
+                write_into_files(i, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter) 
             file_evaluation.close()
-        elif len(mc) == 1 and len(cep) == 1 and len(tmc) == 1 and len(tmp) > 1:
+        elif len(parameter["mc"]) == 1 and len(parameter["cep"]) == 1 and len(parameter["tmc"]) == 1 and len(parameter["tmp"]) > 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
-            if ws:
-                os.mkdir("evaluation/{}_tmp_ws_true_{}_{}".format(date_time, string_random_outdated, language_model))
-                file_evaluation = open("evaluation/{}_tmp_ws_true_{}_{}/eval_tmp_ws_true_{}_{}_{}.txt".format(date_time, string_random_outdated, language_model, string_random_outdated, language_model, date_time), "w")
-                folder = "{}_tmp_ws_true_{}_{}".format(date_time, string_random_outdated, language_model)
-            else:
-                os.mkdir("evaluation/{}_tmp_ws_false_{}_{}".format(date_time, string_random_outdated, language_model))
-                file_evaluation = open("evaluation/{}_tmp_ws_false_{}_{}/eval_tmp_ws_false_{}_{}_{}.txt".format(date_time, string_random_outdated, language_model, string_random_outdated, language_model, date_time), "w")
-                folder = "{}_tmp_ws_false_{}_{}".format(date_time, string_random_outdated, language_model)
-            file_evaluation.write("tmp "+str(tmp)+"\n")
-            if "txt" in str(file_examples) or "json" in str(file_examples):
-                file_evaluation.write(file_examples+"\n\n")
-            else:
-                file_evaluation.write(random_file_path + ", random_count: "+ str(random_count)+"\n")
-                file_evaluation.write("Random examples: {}\n\n".format(random_examples))
-            mc_value = mc[0]
-            tp_value = cep[0]
-            tmc_value = tmc[0]
-            for i in range (0, len(tmp)):
-                tmp_value = tmp[i]
-                write_into_files(i, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, file_examples) 
+            os.mkdir("evaluation/{}_tmp_ts_{}_{}_{}".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"]))
+            file_evaluation = open("evaluation/{}_tmp_ts_{}_{}_{}/eval_ts_{}_{}_{}_{}.txt".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"], parameter["ts"], string_random_outdated, parameter["lm"], date_time), "w")
+            folder = "{}_tmp_ts_{}_{}_{}".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"])
+            file_evaluation.write("tmp "+str(parameter["tmp"])+"\n")
+            file_evaluation.write(parameter["queries_path"]+"\n\n")
+            mc_value = parameter["mc"][0]
+            tp_value = parameter["cep"][0]
+            tmc_value = parameter["tmc"][0]
+            for i in range (0, len(parameter["tmp"])):
+                tmp_value = parameter["tmp"][i]
+                write_into_files(i, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter) 
             file_evaluation.close()
     else:
         print("Hybrid returns no results")
 
-if __name__ == '__main__':
-    #parsing the label-ID-dictionary
-    entities = {}
-    dicto = open("wikidata/dictio_label_id.txt", "r")
-    lines = dicto.read().split("']\n")
-    for line in lines:
-        key_value = line.split(" ['")
-        if(key_value != ['']):
-            values = key_value[1].split("', '")
-            list_values = []
-            for v in values:
-                if "http://www.wikidata.org/entity/Q" in v:
-                    list_values.append(v)
-                    entities[key_value[0]] = list_values
-    dicto.close()
-    print("INFO: Label_ID_Dictio parsed")
+def read_config_file():
+    #parsing the config file
+    config_file = open("config.json", "r")
+    dictio_config = json.load(config_file)
+    config_file.close()
+    return dictio_config
 
-    random = False
-    random_count = 200
-    random_file_path = "examples/personal/all_possible/1114_port_examples_random_200.txt"
-    random_examples = []
-    if random:
-        file = open(random_file_path, "r")
-        examples = []
-        line = file.readline().split("\n")[0]
-        while line != "":
-            examples.append(line)
-            line = file.readline().split("\n")[0]
-        file.close()
-        max_index = len(examples)-1
-        for _ in range(random_count):
-            index = randint(0, max_index)
-            line = examples[index]
-            items = line.split(" ")
-            random_examples.append(items)
+from rdflib import Graph
+def read_dataset_files(dictio_config):   
+    #parsing the wikidata datasets
+    dictio_wikidata_subjects = {} #maps subjects to given property and object of complete and incomplete wikidata
+    dictio_wikidata_objects = {} #maps objects to given subject an property of complete and incomplete wikidata
+    wikidata_gold = Graph()
+    wikidata_gold.parse(dictio_config["wikidata_gold_path"], format="nt")
+    for (s, p, o) in wikidata_gold:
+        prop = str(p).split('/')[-1].replace('>', "")
+        subj = str(s).split('/')[-1].replace('>', "")
+        obj = str(o).split('/')[-1].replace('>', "")
+        if prop not in dictio_wikidata_subjects:
+            dictio_wikidata_subjects[prop] = {}
+        else:
+            if obj not in dictio_wikidata_subjects[prop]:
+                dictio_wikidata_subjects[prop][obj] = {}
+                dictio_wikidata_subjects[prop][obj]["complete"] = set()
+                dictio_wikidata_subjects[prop][obj]["random_incomplete"] = set()
+            
+            dictio_wikidata_subjects[prop][obj]["complete"].add(subj)
+
+        if prop not in dictio_wikidata_objects:
+            dictio_wikidata_objects[prop] = {}
+        else:
+            if subj not in dictio_wikidata_objects[prop]:
+                dictio_wikidata_objects[prop][subj] = {}
+                dictio_wikidata_objects[prop][subj]["complete"] = set()
+                dictio_wikidata_objects[prop][subj]["random_incomplete"] = set()
+
+            dictio_wikidata_objects[prop][subj]["complete"].add(obj)
+         
+    wikidata_missing_tripels = Graph()
+    wikidata_missing_tripels.parse(dictio_config["wikidata_missing_tripel_path"], format="nt")
+    for (s, p, o) in wikidata_missing_tripels:
+        prop = str(p).split('/')[-1].replace('>', "")
+        subj = str(s).split('/')[-1].replace('>', "")
+        obj = str(o).split('/')[-1].replace('>', "")
+        if prop not in dictio_wikidata_subjects:
+            print("WARNING something wrong with missing tripels dataset --> property not existing")
+        else:
+            if obj not in dictio_wikidata_subjects[prop]:
+                print("WARNING something wrong with missing tripels dataset --> object not existing {}".format(obj))
+            else:
+                dictio_wikidata_subjects[prop][obj]["random_incomplete"].add(subj)
+
+        if prop not in dictio_wikidata_objects:
+            print("WARNING something wrong with missing tripels dataset --> property not existing")
+        else:
+            if subj not in dictio_wikidata_objects[prop]:
+                print("WARNING something wrong with missing tripels dataset --> object not existing {}".format(subj))
+            else:
+                dictio_wikidata_objects[prop][subj]["random_incomplete"].add(obj)
+    return dictio_wikidata_subjects, dictio_wikidata_objects
+
+
+
+def read_label_id_file(dictio_config):
+    #parsing the label-ID-dictionary
+    dictio_label_id = {}
+    label_id_file = open(dictio_config["label_id_path"], "r")
+    line = label_id_file.readline().split("\n")[0]
+    while line != "":
+        data = json.loads(line)
+        label = list(data.keys())
+        dictio_label_id[label[0]] = data[label[0]]
+        line = label_id_file.readline().split("\n")[0]
+    label_id_file.close()
+    return dictio_label_id
+
+def read_id_label_file(dictio_config):
+    #parsing the ID-label-dictionary TODO
+    dictio_id_label = {}
+    #id_label_file = open(dictio_config["id_label_path"], "r")
+    #line = id_label_file.readline().split("\n")[0]
+    #while line != "":
+    #    data = json.loads(line)
+    #    label = list(data.keys())
+    #     dictio_id_label[label[0]] = data[label[0]]
+    #    line = id_label_file.readline().split("\n")[0]
+    #id_label_file.close()
+    return dictio_id_label
+
+def read_cardinality_estimation_file(dictio_config):
+    #read json file if cardinality estimation is activated
+    dictio_prop_probdistribution = {}
+    file_prop_mu_sig = open(dictio_config["cardinality_estimation_path"], "r")
+    line = file_prop_mu_sig.readline().split("\n")[0]
+    while line != "":
+        d = json.loads(line)
+        dictio_prop_probdistribution[d["prop"]] = d
+        line = file_prop_mu_sig.readline().split("\n")[0]
+    file_prop_mu_sig.close()
+    return dictio_prop_probdistribution
+
+def read_template_file(dictio_config):
+    #read json file for templates
+    dictio_prop_templates = {}
+    file_prop_sentence = open(dictio_config["template_path"], "r")
+    dictio_prop_templates = json.load(file_prop_sentence)
+    return dictio_prop_templates
+
+def read_prop_classes_file(dictio_config):
+    dictio_prop_classes = {}
+    file_prop_class = open(dictio_config["prop_class_path"], "r")
+    line = file_prop_class.readline().split("\n")[0]
+    while line != "":
+        data = json.loads(line)
+        prop = list(data.keys())
+        dictio_prop_classes[prop[0]] = data[prop[0]]
+        line = file_prop_class.readline().split("\n")[0]
+    file_prop_class.close()
+    return dictio_prop_classes
+
+if __name__ == '__main__':
+    #TODO LM BUILD
+    #if lm == "roberta":
+    #        path = "/data/fichtel/roberta.large/"
+    #        result = subprocess.Popen(["python", "LAMA/lama/eval_generation.py", "--lm", lm, "--rmd", path, "--t", query_LM], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
+    #        #print(result)
+    #    elif lm == "bert":
+    #        result = subprocess.Popen(["python", "LAMA/lama/eval_generation.py", "--lm", lm, "--bmn", "bert-large-cased", "--t", query_LM], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
+    #    else:
+    #        result = subprocess.Popen(["python", "LAMA/lama/eval_generation.py", "--lm", lm, "--t", query_LM], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
+    dictio_config = read_config_file()
+    #dictio_wikidata_subjects, dictio_wikidata_objects = read_dataset_files(dictio_config)
+    #dictio_label_id = read_label_id_file(dictio_config)
+    #dictio_id_label = read_id_label_file(dictio_config)
+    #dictio_prop_probdistribution = read_cardinality_estimation_file(dictio_config)
+    #dictio_prop_templates = read_template_file(dictio_config)
+    #dictio_prop_classes = read_prop_classes_file(dictio_config)
+    data = {}
+    data["config"] = dictio_config
+    #data["wikidata_subjects"] = dictio_wikidata_subjects
+    #ata["wikidata_objects"] = dictio_wikidata_objects
+    #data["label_id"] = dictio_label_id
+    #data["id_label"] = dictio_id_label
+    #data["prop_probdistribution"] = dictio_prop_probdistribution
+    #data["prop_template"] = dictio_prop_templates
+    #data["prop_classes"] = dictio_prop_classes
+    print("read all data files")
 
     evaluations = []
-    #port: port for the outdated versioon of wikidata
-    #file_example: path to an example file
+    #wikidata_incomplete: version how incomplete wikidata was created: "random_incomplete" (or "outdated_incomplete")
+    #file_queries: path to an query .nt file
     #lm: name of the Language Model(LM)
     #mc: hardcoded maximum confusion
     #mr: hardcoded max results which LM should add
@@ -601,209 +666,36 @@ if __name__ == '__main__':
     #tmc: threshold for confusion at threshold calculation for confusion
     #tmn: threshold for number of results at threshold calculation for confusion
     #tmp: threshold for percentage at threshold calculation for confusion
-    #ws: value wheather keyword or whole sentence should be used for LM
+    #ts: value how many templates should be used
     #apc: value wheather the proptery classes should always be used
 
     #evaluation test
-    port = "1114"
-    #file_examples = "examples/personal/test.txt"
-    file_examples_outdated = "examples/personal/all_possible/outdated/alor_True/1114_port_examples_random_200_alor_True.txt"
-    file_examples_random = "examples/personal/all_possible/random/alor_True/random_examples_random_200_alor_True_0.json"
-    #file_examples = random_examples
-    lm = "bert"
-    mc = [-7]
-    mr = 1
-    ces = 1000
-    cep = [0.5]
-    tmc = [-1, -1.1, -1.2, -1.3, -1.4, -1.5, -2, -3, -4]
-    tmn = 10
-    tmp = [0.5]
-    ws = True
-    apc = False
-    if correct_parameter(mc, cep, tmc, tmp):
-        eval_test_outdated = [port, file_examples_outdated, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        eval_test_random = [port, file_examples_random, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        evaluations.append([None, eval_test_random])
+    parameter = {}
+    parameter["wikidata_incomplete"] = "random_incomplete"
+    parameter["queries_path"] = dictio_config["queries_path"]
+    parameter["lm"] = "bert"
+    parameter["mc"] = [-7]
+    parameter["mr"] = 1
+    parameter["ces"] = 1000
+    parameter["cep"] = [0.5]
+    parameter["tmc"] = [-1, -1.1, -1.2, -1.3, -1.4, -1.5, -2, -3, -4]
+    parameter["tmn"] = 10
+    parameter["tmp"] = [0.5]
+    parameter["ts"] = 1
+    parameter["apc"] = False
+    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
     else:
         print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
-    #evaluation test
-    port = "1114"
-    file_examples_outdated = "examples/personal/all_possible/outdated/alor_True/1114_port_examples_random_200_alor_True_1.txt"
-    file_examples_random = "examples/personal/all_possible/random/alor_True/random_examples_random_200_alor_True_1.json"
-    lm = "bert"
-    mc = [-7]
-    mr = 1
-    ces = 1000
-    cep = [0.5]
-    tmc = [-1, -1.1, -1.2, -1.3, -1.4, -1.5, -2, -3, -4]
-    tmn = 10
-    tmp = [0.5]
-    ws = True
-    apc = False
-    if correct_parameter(mc, cep, tmc, tmp):
-        eval_test2_outdated = [port, file_examples_outdated, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        eval_test2_random = [port, file_examples_random, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        evaluations.append([None, eval_test2_random])
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
-
-    #evaluation test
-    port = "1114"
-    file_examples_outdated = "examples/personal/all_possible/outdated/alor_True/1114_port_examples_random_200_alor_True_2.txt"
-    file_examples_random = "examples/personal/all_possible/random/alor_True/random_examples_random_200_alor_True_2.json"
-    lm = "bert"
-    mc = [-7]
-    mr = 1
-    ces = 1000
-    cep = [0.5]
-    tmc = [-1, -1.1, -1.2, -1.3, -1.4, -1.5, -2, -3, -4]
-    tmn = 10
-    tmp = [0.5]
-    ws = True
-    apc = False
-    if correct_parameter(mc, cep, tmc, tmp):
-        eval_test3_outdated = [port, file_examples_outdated, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        eval_test3_random = [port, file_examples_random, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        evaluations.append([None, eval_test3_random])
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
-
-
-    #evaluation 1
-    port = "1114"
-    #file_examples = "examples/personal/test.txt"
-    file_examples_outdated = "examples/personal/all_possible/outdated/alor_True/1114_port_examples_random_200_alor_True_0.txt"
-    file_examples_random = "examples/personal/all_possible/random/alor_True/random_examples_random_200_alor_True_2.json"
-    #file_examples = random_examples
-    lm = "bert"
-    mc = [-1, -1.1, -1.2, -1.3, -1.4, -1.5, -2, -3, -4]
-    mr = 10
-    ces = -1
-    cep = [-1]
-    tmc = [0]
-    tmn = 0
-    tmp = [0]
-    ws = True
-    apc = False
-    if correct_parameter(mc, cep, tmc, tmp):
-        eval_1_outdated = [port, file_examples_outdated, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        eval_1_random = [port, file_examples_random, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        #evaluations.append([None, eval_1_random])
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
-    
-    #evaluation 2
-    port = "1114"
-    #file_examples = "examples/personal/test.txt"
-    file_examples_outdated = "examples/personal/all_possible/outdated/alor_True/1114_port_examples_random_200_alor_True_1.txt"
-    file_examples_random = "examples/personal/all_possible/random/alor_False/random_examples_random_200_alor_False_one_result_0.json"
-    #file_examples = random_examples
-    lm = "bert"
-    mc = [-7]
-    mr = 10
-    ces = 1000
-    cep = [0.5]
-    tmc = [-1, -1.1, -1.2, -1.3, -1.4, -1.5, -2, -3, -4]
-    tmn = 10
-    tmp = [0.5]
-    ws = True
-    apc = False
-    if correct_parameter(mc, cep, tmc, tmp):
-        eval_2_outdated = [port, file_examples_outdated, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        eval_2_random = [port, file_examples_random, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        #evaluations.append([None, eval_2_random])
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
-    
-    #evaluation 3
-    port = "1114"
-    #file_examples = "examples/personal/test.txt"
-    file_examples_outdated = "examples/personal/all_possible/outdated/alor_True/1114_port_examples_random_200_alor_True_2.txt"
-    file_examples_random = "examples/personal/all_possible/random/alor_True/random_examples_random_200_alor_True_1.json"
-    #file_examples = random_examples
-    lm = "bert"
-    mc = [-7]
-    mr = 10
-    ces = -1
-    cep = [-1]
-    tmc = [-1, -1.1, -1.2, -1.3, -1.4, -1.5, -2, -3, -4]
-    tmn = 10
-    tmp = [0.5]
-    ws = True
-    apc = False
-    if correct_parameter(mc, cep, tmc, tmp):
-        eval_3_outdated = [port, file_examples_outdated, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        eval_3_random = [port, file_examples_random, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        #evaluations.append([None, eval_3_random])
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
-    
-    #evaluation 4
-    port = "1114"
-    #file_examples = "examples/personal/test.txt"
-    file_examples_outdated = "examples/personal/all_possible/outdated/alor_True/1114_port_examples_random_200_alor_True.txt"
-    file_examples_random = "examples/personal/all_possible/random/alor_True/random_examples_random_200_alor_True_2.json"
-    #file_examples = random_examples
-    lm = "bert"
-    mc = [-7]
-    mr = 10
-    ces = -1
-    cep = [-1]
-    tmc = [-1, -1.1, -1.2, -1.3, -1.4, -1.5, -2, -3, -4]
-    tmn = 10
-    tmp = [0.5]
-    ws = True
-    apc = False
-    if correct_parameter(mc, cep, tmc, tmp):
-        eval_4_outdated = [port, file_examples_outdated, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        eval_4_random = [port, file_examples_random, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc]
-        #evaluations.append([None, eval_4_random])
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
-    
     runtime = []
-    for eval_outdated_random in evaluations:
-        outdated = eval_outdated_random[0]
-        if outdated:
-            port = outdated[0]
-            file_examples = outdated[1]
-            lm = outdated[2]
-            mc = outdated[3]
-            mr = outdated[4]
-            ces = outdated[5]
-            cep = outdated[6]
-            tmc = outdated[7]
-            tmn = outdated[8]
-            tmp = outdated[9]
-            ws = outdated[10]
-            apc = outdated[11]
-            start = timeit.default_timer()
-            hybrid_output, list_hybrid_log, list_errors = outdated_hybrid.execute(port, file_examples, entities, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc)
-            stop = timeit.default_timer()
-            handeling_output(hybrid_output, list_hybrid_log, list_errors, "outdated", lm)
-            print('Time: {}min'.format((stop - start)/60))
-            runtime.append(str((stop - start)/60)+"min")
-        random = eval_outdated_random[1]
-        if random:
-            port = random[0]
-            file_examples = random[1]
-            lm = random[2]
-            mc = random[3]
-            mr = random[4]
-            ces = random[5]
-            cep = random[6]
-            tmc = random[7]
-            tmn = random[8]
-            tmp = random[9]
-            ws = random[10]
-            apc = random[11]
-            start = timeit.default_timer()
-            hybrid_output, list_hybrid_log, list_errors = random_hybrid.execute(port, file_examples, entities, lm, mc, mr, ces, cep, tmc, tmn, tmp, ws, apc)
-            stop = timeit.default_timer()
-            handeling_output(hybrid_output, list_hybrid_log, list_errors, "random", lm)
-            print('Time: {}min'.format((stop - start)/60))
-            runtime.append(str((stop - start)/60)+"min")
+    for parameter in evaluations:
+        start = timeit.default_timer()
+        hybrid_output, list_hybrid_log, list_errors = hybrid_system.execute(parameter, data)
+        stop = timeit.default_timer()
+        handeling_output(parameter, hybrid_output, list_hybrid_log, list_errors, parameter["wikidata_incomplete"].split("_")[0])
+        print('Time: {}min'.format((stop - start)/60))
+        runtime.append(str((stop - start)/60)+"min")
     print(runtime)
                 
         

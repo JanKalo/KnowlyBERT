@@ -21,125 +21,56 @@ dictio_whole_sentence = None
 triangle_method_percentages = None
 at_least_one_result = None
 
-def set_global_varibales(dictio_entities, dictio_dist, dictio_ws, mc, mr, ces, cep, tmc, tmn, tmp, ws, alor):
-    global dictio_prob_distribution
-    dictio_prob_distribution = dictio_dist
-    global dictio_whole_sentence
-    dictio_whole_sentence = dictio_ws
-    global entities
-    entities = dictio_entities
-    global triangle_method_confusions
-    triangle_method_confusions = tmc
-    global triangle_method_number
-    triangle_method_number = int(tmn)
-    global max_confusions
-    global triangle_method_percentages
-    triangle_method_percentages = tmp
-    max_confusions = mc
-    global max_results_LM
-    max_results_LM = mr
-    global cardinality_estimation_sampling
-    cardinality_estimation_sampling = ces
-    global cardinality_estimation_percentages
-    cardinality_estimation_percentages = cep
-    global bool_whole_sentence
-    bool_whole_sentence = ws
-    global at_least_one_result
-    at_least_one_result = alor
-
 #function to find the classes of a given entity (i.e. item_id_url=http://www.wikidata.org/entity/Q567)
-def find_class(entity_id_url, cursor_current):
+def find_class(id, cursor_current):
     classes = []
-    if("http://www.wikidata.org/entity/Q" in entity_id_url):
-        #finding instance
-        query = """SELECT ?instance 
+    #finding instance
+    query = """SELECT ?instance 
+            WHERE {{
+                <http://www.wikidata.org/entity/{}> <http://www.wikidata.org/prop/direct/P31> ?instance
+            }}""".format(id)
+    cursor_current.execute("SPARQL "+query)
+    while True:
+        row = cursor_current.fetchone()
+        if not row:
+            break
+        actu = row.instance
+        classes.append(actu)
+    #finding superclass if no instances are found
+    if classes == []:
+        query = """SELECT ?supclass
                 WHERE {{
-                    <{}> <http://www.wikidata.org/prop/direct/P31> ?instance
-                }}""".format(entity_id_url)
+                    <http://www.wikidata.org/entity/{}> <http://www.wikidata.org/prop/direct/P279> ?supclass
+                }}""".format(id)
         cursor_current.execute("SPARQL "+query)
         while True:
             row = cursor_current.fetchone()
             if not row:
                 break
-            actu = (row.instance).replace('\x00', '') #TODO WHY????
+            actu = row.supclass
             classes.append(actu)
-        #finding superclass if no instances are found
-        if classes == []:
-            query = """SELECT ?supclass
-                    WHERE {{
-                        <{}> <http://www.wikidata.org/prop/direct/P279> ?supclass
-                    }}""".format(entity_id_url)
-            cursor_current.execute("SPARQL "+query)
-            while True:
-                row = cursor_current.fetchone()
-                if not row:
-                    break
-                actu = (row.supclass).replace('\x00', '') #TODO WHY????
-                classes.append(actu)
-        #finding part if no instances and no superclasses are found
-        if classes == []:
-            query = """SELECT ?part
-                    WHERE {{
-                        <{}> <http://www.wikidata.org/prop/direct/P361> ?part
-                    }}""".format(entity_id_url)
-            cursor_current.execute("SPARQL "+query)
-            while True:
-                row = cursor_current.fetchone()
-                if not row:
-                    break
-                actu = (row.part).replace('\x00', '') #TODO WHY????
-                classes.append(actu)
-        return classes
-    else:
-        return "WARNING It is only for entity urls! {}".format(entity_id_url)
+    #finding part if no instances and no superclasses are found
+    if classes == []:
+        query = """SELECT ?part
+                WHERE {{
+                    <http://www.wikidata.org/entity/{}> <http://www.wikidata.org/prop/direct/P361> ?part
+                }}""".format(id)
+        cursor_current.execute("SPARQL "+query)
+        while True:
+            row = cursor_current.fetchone()
+            if not row:
+                break
+            actu = row.part
+            classes.append(actu)
+    return classes
 
-#function to resolve the item_ids (i.e. Q567) into labels (i.e. Angela Merkel)
-def find_label(item_id, cursor_current):
-    if(item_id[0] == "Q"):
-        query = """SELECT ?varLabel
-                WHERE {{
-                    OPTIONAL {{
-                        <http://www.wikidata.org/entity/{}> <http://www.w3.org/2000/01/rdf-schema#label> ?varLabel.
-                        FILTER(LANG(?varLabel) = "en").
-                    }} 
-                }}""".format(item_id)
-        cursor_current.execute("SPARQL "+query)
-        while True:
-            row = cursor_current.fetchone()
-            if not row:
-                break
-            if row.varLabel != None:
-                label = (row.varLabel).replace('\x00', '') #TODO WHY????
-                return label
-            else:
-                return "WARNING: No label have been found, item_id: {}".format(item_id)
-    elif(item_id[0] == "P"):
-        query = """SELECT ?varLabel
-                WHERE {{
-                    OPTIONAL {{
-                        <http://www.wikidata.org/entity/{}> <http://www.w3.org/2000/01/rdf-schema#label> ?varLabel.
-                        FILTER(LANG(?varLabel) = "en").
-                    }} 
-                }}""".format(item_id)
-        cursor_current.execute("SPARQL "+query)
-        while True:
-            row = cursor_current.fetchone()
-            if not row:
-                break
-            if row.varLabel != None:
-                label = (row.varLabel).replace('\x00', '') #TODO WHY????
-                return label
-            else:
-                if item_id == "P2633":
-                    return "geography of topic"
-                elif item_id == "P2695":
-                    return "type locality (geology)"
-                elif item_id == "P4688":
-                    return "geomorphological unit"
-                else:
-                    return "WARNING: No label have been found, item_id: {}".format(item_id)
+#function to resolve a id (i.e. Q567) into label (i.e. Angela Merkel)
+def find_label(id, data):
+    dictio_id_label = data["id_label"]
+    if id in dictio_id_label:
+        return dictio_id_label[id]
     else:
-        return "WARNING: No correct form of item_id: Q... or P..., item_id: {}".format(item_id)
+        return "WARNING: No label have been found, id: {}".format(id)
 
 #function to create output with all data of each query --> return value
 def get_output_data(prop, results_KG_current, results_KG_o_r, possible_results_LM, results_LM, results_LM_estimation, not_in_dictionary, already_existing, status_possible_result_LM_label, status_possible_result_LM_ID, dictio_label_possible_entities):
@@ -157,81 +88,71 @@ def get_output_data(prop, results_KG_current, results_KG_o_r, possible_results_L
     data["missing"] = not_in_dictionary
     return data
 
-#function to sent query to knowledge Graph
-def execute_query_KG_current(query, cursor_current):
-    cursor_current.execute("SPARQL "+query)
-    results_KG_o_r = {}
-    classes_KG = []
-    number_of_KG_results = 0
-    while True:
-        row = cursor_current.fetchone()
-        if not row:
-            break
-        number_of_KG_results = number_of_KG_results + 1
-        var = row.var
-        if row.varLabel != None:
-            label = row.varLabel
-            results_KG_o_r[var] = label
+#function to find the results to the tripel-query of the complete KG
+def find_results_KG_complete(tripel, data):
+    results_KG_complete = {}
     errors = []
-    for var in results_KG_o_r:
-        classes = find_class(var, cursor_current)
-        if "WARNING" in str(classes):
-            errors.append(classes)
+    subj = tripel[0]
+    prop = tripel[1]
+    obj = tripel[2]
+    results = set()
+    if subj == "?":
+        results = data["wikidata_subjects"][prop][obj]["complete"]
+    elif obj == "?":
+        results = data["wikidata_objects"][prop][subj]["complete"]
+    else:
+        errors.append("Tripel is in a wrong format {}".format(tripel))
+    
+    for result in results:
+        label = find_label(result, data["id_label"])
+        if "WARNING" in label:
+            errors.append(label) 
         else:
-            for c in classes:
-                    if c not in classes_KG:
-                        classes_KG.append(c)
-    return results_KG_o_r, classes_KG, number_of_KG_results, errors
-
-#function to sent query to knowledge Graph
-def execute_query_KG_outdated(query, cursor_outdated, cursor_current):
-    cursor_outdated.execute("SPARQL "+query)
-    results_KG = {}
-    classes_KG = []
-    number_of_KG_results = 0
-    while True:
-        row = cursor_outdated.fetchone()
-        if not row:
-            break
-        number_of_KG_results = number_of_KG_results + 1
-        var = row.var
-        if row.varLabel != None:
-            label = row.varLabel
-            results_KG[var] = label
-        else:
-            results_KG[var] = "no label"
+            results_KG_complete[result] = label
+    return results_KG_complete, errors
+        
+#function to find the results to the tripel-query of the incomplete KG
+def find_results_KG_incomplete(tripel, parameter, data):
+    results_KG_incomplete = {}
+    expected_classes = []
     errors = []
-    for var in results_KG:
-        classes = find_class(var, cursor_current)
-        if "WARNING" in str(classes):
-            errors.append(classes)
-        else:
-            for c in classes:
-                    if c not in classes_KG:
-                        classes_KG.append(c)
-    return results_KG, classes_KG, number_of_KG_results, errors
+    subj = tripel[0]
+    prop = tripel[1]
+    obj = tripel[2]
+    results = set()
+    if subj == "?":
+        results = data["wikidata_subjects"][prop][obj][parameter["wikidata_incomplete"]]
+    elif obj == "?":
+        results = data["wikidata_objects"][prop][subj][parameter["wikidata_incomplete"]]
+    else:
+        errors.append("Tripel is in a wrong format {}".format(tripel))
 
-#function to sent query to knowledge Graph
-def find_results_KG_random(results_KG_random, cursor_current):
-    errors = []
-    results_KG = {}
-    classes_KG = []
-    for result in results_KG_random:
-        label = find_label(result.split("http://www.wikidata.org/entity/")[1], cursor_current)
-        results_KG[result] = label
-    for var in results_KG_random:
-        classes = find_class(var, cursor_current)
-        if "WARNING" in str(classes):
-            errors.append(classes)
+    for result in results:
+        label = find_label(result, data["id_label"])
+        if "WARNING" in label:
+            errors.append(label) 
         else:
-            for c in classes:
-                    if c not in classes_KG:
-                        classes_KG.append(c)
-    return results_KG, classes_KG, errors
+            results_KG_incomplete[result] = label
 
-def find_results_LM(result, result_KG, classes_KG, cursor_current):
+    # Specifying the ODBC driver, server name, database, etc. directly
+    cnxn_current = pyodbc.connect('DSN=MyVirtuoso;UID=dba;PWD=F4B656JXqBG')
+    cnxn_current.setdecoding(pyodbc.SQL_CHAR, encoding='utf-8')
+    cnxn_current.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
+    # Create a cursor from the connection
+    cursor_current = cnxn_current.cursor()
+    with cursor_current:
+        for result in results_KG_incomplete:
+            classes = find_class(result, cursor_current)
+            if "WARNING" in str(classes):
+                errors.append(classes)
+            else:
+                for c in classes:
+                    if c not in expected_classes:
+                        expected_classes.append(c)
+    return results_KG_incomplete, expected_classes, errors
+
+def find_results_LM(result_LM, results_KG_complete, expected_classes, data):
     #return all possible results which fits to the classes of the KG results
-    global entities
     results_LM = {}
     not_in_dictionary = {}         
     lines = result.split("\n")

@@ -15,18 +15,13 @@ def main(file_path):
     while line != "":
         data = json.loads(line)
         prop = data["relation"]
-        dictio_sentence = {}
         sentence = data["template"]
-        dictio_sentence["?PQ"] = (sentence.replace("[X]", "[MASK]")).replace("[Y]", "Q")
-        dictio_sentence["QP?"] = (sentence.replace("[Y]", "[MASK]")).replace("[X]", "Q")
-        dictio_prop_sentence[prop] = dictio_sentence
+        template = (sentence.replace("[X]", "[S]")).replace("[Y]", "[O]")
+        dictio_prop_sentence[prop] = {}
+        dictio_prop_sentence[prop][template] = 7
         line = file_relations.readline().split("\n")[0]
         
-    for prop in dictio_prop_sentence:
-        temp = {}
-        temp[prop] = dictio_prop_sentence[prop]
-        json.dump(temp, file_dictio)
-        file_dictio.write("\n")
+    json.dump(dictio_prop_sentence, file_dictio)
     
 
 if __name__ == '__main__':
