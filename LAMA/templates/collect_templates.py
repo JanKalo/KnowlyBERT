@@ -71,7 +71,6 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
 
             # get sentences from "sentences_boundaries"
             for sent_b in abstract["sentences_boundaries"]:
-
                 sent = abstract["text"][sent_b[0]:sent_b[1]]
                 if len(sent.split()) <= maxLength:
                     # get entities in this boundary
@@ -83,33 +82,52 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
                         for e1 in sent_ents:
                             for e2 in sent_ents:
                                 if (e1['uri'],e2['uri']) in entityPairs:
-                                    entry = {}
-                                    entry['entities'] = (e1['uri'],e2['uri'])
+                                    e1_too_short_surfaceform = False
+                                    if e1['boundaries'][1] - e1['boundaries'][0] != len(entityLabels[e1['uri']]):
+                                        e1_label_token = entityLabels[e1['uri']].split(" ")
+                                        for token in e1_label_token:                                            
+                                            if token in e1["surfaceform"].split(" "):
+                                                e1_too_short_surfaceform = True
+                                                #print("too short surfaceform")
+                                                #print("label:{}, surfaceform:{}\n".format(entityLabels[e1['uri']], e1["surfaceform"]))
+                                                break
+                                    e2_too_short_surfaceform = False
+                                    if e2['boundaries'][1] - e2['boundaries'][0] != len(entityLabels[e2['uri']]):
+                                        e2_label_token = entityLabels[e2['uri']].split(" ")
+                                        for token in e2_label_token:
+                                            if token in e2["surfaceform"].split(" "):
+                                                e2_too_short_surfaceform = True
+                                                #print("too short surfaceform")
+                                                #print("label:{}, surfaceform:{}\n".format(entityLabels[e2['uri']], e2["surfaceform"]))
+                                                break
+                                        
+                                    if e1_too_short_surfaceform == False and e2_too_short_surfaceform == False:
+                                        entry = {}
+                                        entry['entities'] = (e1['uri'],e2['uri'])
+                                        if e1['boundaries'][0] < e2['boundaries'][0]:
+                                            e1_boundary_diff = len(entityLabels[e1['uri']]) - (e1['boundaries'][1] - e1['boundaries'][0])
+                                            entry['e1'] = e1['boundaries'][:]
+                                            entry['e1'][1] = entry['e1'][0] + len(entityLabels[e1['uri']])
+                                            entry['e2'] = e2['boundaries']
+                                            entry['e2'][0] = entry['e2'][0] + e1_boundary_diff
+                                            entry['e2'][1] = entry['e2'][0] + len(entityLabels[e2['uri']])
 
-                                    sent = sent[:e1['boundaries'][0]] + entityLabels[e1['uri']] + sent[e1['boundaries'][1]:]
-                                    sent = sent[:e2['boundaries'][0]] + entityLabels[e2['uri']] + sent[e2['boundaries'][1]:]
+                                            sent = sent[:e1['boundaries'][0]] + entityLabels[e1['uri']] + sent[e1['boundaries'][1]:]
+                                            sent = sent[:entry['e2'][0]] + entityLabels[e2['uri']] + sent[entry['e2'][1]:]
 
-                                    if e1['boundaries'][0] < e1['boundaries'][0]:
-                                        e1_boundary_diff = len(entityLabels[e1['uri']]) - (e1['boundaries'][1] - e1['boundaries'][0])
+                                        else:
+                                            e2_boundary_diff = len(entityLabels[e2['uri']]) - (e2['boundaries'][1] - e2['boundaries'][0])
+                                            entry['e2'] = e2['boundaries'][:]
+                                            entry['e2'][1] = entry['e2'][0] + len(entityLabels[e2['uri']])
+                                            entry['e1'] = e1['boundaries']
+                                            entry['e1'][0] = entry['e1'][0] + e2_boundary_diff
+                                            entry['e1'][1] = entry['e1'][0] + len(entityLabels[e1['uri']])
 
-                                        entry['e1'] = e1['boundaries']
-                                        entry['e1'][1] = entry['e1'][0] + len(entityLabels[e1['uri']])
-                                        entry['e2'] = e2['boundaries']
-                                        entry['e2'][0] = entry['e2'][0] + e1_boundary_diff
-                                        entry['e2'][1] = entry['e2'][0] + len(entityLabels[e2['uri']])
+                                            sent = sent[:e2['boundaries'][0]] + entityLabels[e2['uri']] + sent[e2['boundaries'][1]:]
+                                            sent = sent[:entry['e1'][0]] + entityLabels[e1['uri']] + sent[entry['e1'][1]:] 
 
-                                    else:
-                                        e2_boundary_diff = len(entityLabels[e2['uri']]) - (
-                                                    e2['boundaries'][1] - e2['boundaries'][0])
-
-                                        entry['e2'] = e2['boundaries']
-                                        entry['e2'][1] = entry['e2'][0] + len(entityLabels[e2['uri']])
-                                        entry['e1'] = e1['boundaries']
-                                        entry['e1'][0] = (entry['e1'][0] + e2_boundary_diff)
-                                        entry['e1'][1] = (entry['e1'][0] + len(entityLabels[e1['uri']]))
-
-                                    entry['sentence'] = sent
-                                    index.append(entry)
+                                        entry['sentence'] = sent
+                                        index.append(entry)
 
                 # done for file fn
     return index
@@ -197,7 +215,7 @@ import multi_token as mt
 def rank_sentences_2(model, index_entry, entityPairs, entity2Labels, label2Entities):
 
     orig_sentence = index_entry['sentence']
-
+    print(orig_sentence)
     #sentence_1 = orig_sentence.replace(entity2Labels[index_entry['e1'][0]], '[MASK]')
     #sentence_2 = orig_sentence.replace(entity2Labels[index_entry["entities"][1]], '[MASK]')
 
@@ -246,9 +264,10 @@ def find_similar_sentences(index, entity2Labels):
     filtered_index = []
     for sentence in index:
         orig_sentence = sentence["sentence"]
-        subject_object_template = orig_sentence[:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:]
-        subject_object_template = subject_object_template[:sentence['e2'][0]] + "[O]" + subject_object_template[sentence['e2'][1]:]
-
+        if sentence['e1'][0] < sentence['e2'][0]:
+            subject_object_template = orig_sentence[:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:]
+        else:
+            subject_object_template = orig_sentence[:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:]
         if subject_object_template not in unique_templates:
             if not re.match(".*[0-9][0-9][0-9][0-9].*", subject_object_template):
                 unique_templates[subject_object_template] = sentence
@@ -290,7 +309,7 @@ if __name__ == '__main__':
         with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as lm_build_file:
             models[lm] = dill.load(lm_build_file)
 
-    prop = "P36"
+    prop = "P1412"
     for model_name, model in models.items():
         if os.path.exists("{}_data".format(prop)):
             with open("{}_data".format(prop), 'rb') as prop_data_file:
@@ -311,13 +330,16 @@ if __name__ == '__main__':
                 dill.dump(prop_data, prop_data_file)
 
         results = {}
-
         filtered_index = find_similar_sentences(prop_data["index"], prop_data["ent2Label"])
         #filtered_index = prop_data["index"]
 
         for sentence in filtered_index:
             score = rank_sentences_2(model, sentence, prop_data["ent"] , prop_data["ent2Label"], prop_data["label2ent"])
-            subject_object_template = (sentence["sentence"].replace(prop_data["ent2Label"][sentence["entities"][0]], '[S]')).replace(prop_data["ent2Label"][sentence["entities"][1]], '[O]')
+            orig_sentence = sentence["sentence"]
+            if sentence['e1'][0] < sentence['e2'][0]:
+                subject_object_template = orig_sentence[:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:]
+            else:
+                subject_object_template = orig_sentence[:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:]
             results[subject_object_template] = score
         sorted_results = {k: v for k, v in sorted(results.items(), reverse=True, key=lambda item: item[1])}
 

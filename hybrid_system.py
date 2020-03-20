@@ -1,11 +1,8 @@
 import argparse
 import shlex, subprocess
 import pyodbc
-import prob_distribution.decider as distribution
-import triangle_method.threshold as triangle_method
 import signal
 import sys, traceback
-import LM_sentence.find_sentence as LM_sentence
 from time import sleep
 from multiprocessing import Lock, Pool
 import copy
