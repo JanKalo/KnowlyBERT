@@ -102,10 +102,11 @@ def execute (parameter, data):
         subj = str(tripel[0]).split('/')[-1].replace('>', "")
         prop = str(tripel[1]).split('/')[-1].replace('>', "")
         obj = str(tripel[2]).split('/')[-1].replace('>', "")
-        queries.add((subj, prop, obj))
+        if prop == "P1412":
+            queries.add((subj, prop, obj))
         line = queries_file.readline().replace("\n", "")
     print("parsed example file")
-
+    print(queries)
     pool = None
     results_all_processes = []
     log = []

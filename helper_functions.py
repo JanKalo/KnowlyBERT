@@ -5,7 +5,6 @@ import prob_distribution.decider as distribution
 import triangle_method.threshold as triangle_method
 import signal
 import sys, traceback
-import LM_sentence.find_sentence as LM_sentence
 import timeit
 #global variables
 entities = None

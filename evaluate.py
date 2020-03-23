@@ -514,58 +514,81 @@ def read_config_file():
     config_file.close()
     return dictio_config
 
-from rdflib import Graph
 def read_dataset_files(dictio_config):   
     #parsing the wikidata datasets
     dictio_wikidata_subjects = {} #maps subjects to given property and object of complete and incomplete wikidata
     dictio_wikidata_objects = {} #maps objects to given subject an property of complete and incomplete wikidata
-    wikidata_gold = Graph()
-    wikidata_gold.parse(dictio_config["wikidata_gold_path"], format="nt")
-    for (s, p, o) in wikidata_gold:
-        prop = str(p).split('/')[-1].replace('>', "")
-        subj = str(s).split('/')[-1].replace('>', "")
-        obj = str(o).split('/')[-1].replace('>', "")
-        if prop not in dictio_wikidata_subjects:
-            dictio_wikidata_subjects[prop] = {}
-        else:
-            if obj not in dictio_wikidata_subjects[prop]:
-                dictio_wikidata_subjects[prop][obj] = {}
-                dictio_wikidata_subjects[prop][obj]["complete"] = set()
-                dictio_wikidata_subjects[prop][obj]["random_incomplete"] = set()
-            
-            dictio_wikidata_subjects[prop][obj]["complete"].add(subj)
-
-        if prop not in dictio_wikidata_objects:
-            dictio_wikidata_objects[prop] = {}
-        else:
-            if subj not in dictio_wikidata_objects[prop]:
-                dictio_wikidata_objects[prop][subj] = {}
-                dictio_wikidata_objects[prop][subj]["complete"] = set()
-                dictio_wikidata_objects[prop][subj]["random_incomplete"] = set()
-
-            dictio_wikidata_objects[prop][subj]["complete"].add(obj)
-         
-    wikidata_missing_tripels = Graph()
-    wikidata_missing_tripels.parse(dictio_config["wikidata_missing_tripel_path"], format="nt")
-    for (s, p, o) in wikidata_missing_tripels:
-        prop = str(p).split('/')[-1].replace('>', "")
-        subj = str(s).split('/')[-1].replace('>', "")
-        obj = str(o).split('/')[-1].replace('>', "")
-        if prop not in dictio_wikidata_subjects:
-            print("WARNING something wrong with missing tripels dataset --> property not existing")
-        else:
-            if obj not in dictio_wikidata_subjects[prop]:
-                print("WARNING something wrong with missing tripels dataset --> object not existing {}".format(obj))
+    #only for debugging
+    if os.path.exists("P1412_dictio_wikidata_objects.json") and os.path.exists("P1412_dictio_wikidata_subjects.json"):
+        with open("P1412_dictio_wikidata_subjects.json", "r") as P1412_subjects:
+            dictio_wikidata_subjects = json.load(P1412_subjects)
+        with open("P1412_dictio_wikidata_objects.json", "r") as P1412_objects:
+            dictio_wikidata_objects = json.load(P1412_objects)
+        print("read saved dictionaries for P1412")
+    else:
+        wikidata_gold_file = open(dictio_config["wikidata_gold_path"], "r")
+        for line in wikidata_gold_file:
+            tripel = (line.replace("\n", "")).split(" ")
+            subj = str(tripel[0]).split('/')[-1].replace('>', "")
+            prop = str(tripel[1]).split('/')[-1].replace('>', "")
+            obj = str(tripel[2]).split('/')[-1].replace('>', "")
+            if prop not in dictio_wikidata_subjects:
+                dictio_wikidata_subjects[prop] = {}
             else:
-                dictio_wikidata_subjects[prop][obj]["random_incomplete"].add(subj)
+                if obj not in dictio_wikidata_subjects[prop]:
+                    dictio_wikidata_subjects[prop][obj] = {}
+                    dictio_wikidata_subjects[prop][obj]["complete"] = []
+                    dictio_wikidata_subjects[prop][obj]["random_incomplete"] = []
+                
+                dictio_wikidata_subjects[prop][obj]["complete"].append(subj)
 
-        if prop not in dictio_wikidata_objects:
-            print("WARNING something wrong with missing tripels dataset --> property not existing")
-        else:
-            if subj not in dictio_wikidata_objects[prop]:
-                print("WARNING something wrong with missing tripels dataset --> object not existing {}".format(subj))
+            if prop not in dictio_wikidata_objects:
+                dictio_wikidata_objects[prop] = {}
             else:
-                dictio_wikidata_objects[prop][subj]["random_incomplete"].add(obj)
+                if subj not in dictio_wikidata_objects[prop]:
+                    dictio_wikidata_objects[prop][subj] = {}
+                    dictio_wikidata_objects[prop][subj]["complete"] = []
+                    dictio_wikidata_objects[prop][subj]["random_incomplete"] = []
+
+                dictio_wikidata_objects[prop][subj]["complete"].append(obj)
+        wikidata_gold_file.close()
+
+        wikidata_missing_tripels = open(dictio_config["wikidata_missing_tripel_path"], "r")
+        for line in wikidata_missing_tripels:
+            tripel = (line.replace("\n", "")).split(" ")
+            subj = str(tripel[0]).split('/')[-1].replace('>', "")
+            prop = str(tripel[1]).split('/')[-1].replace('>', "")
+            obj = str(tripel[2]).split('/')[-1].replace('>', "")
+            if prop not in dictio_wikidata_subjects:
+                print("WARNING something wrong with missing tripels dataset --> property not existing")
+            else:
+                if obj in dictio_wikidata_subjects[prop]:
+                    dictio_wikidata_subjects[prop][obj]["random_incomplete"].append(subj)
+
+            if prop not in dictio_wikidata_objects:
+                print("WARNING something wrong with missing tripels dataset --> property not existing")
+            else:
+                if subj in dictio_wikidata_objects[prop]:
+                    dictio_wikidata_objects[prop][subj]["random_incomplete"].append(obj)
+        wikidata_missing_tripels.close()
+
+        file_P1412_objects = open("P1412_dictio_wikidata_objects.json", "w")
+        temp = {}
+        temp["P1412"] = dictio_wikidata_objects["P1412"]
+        json.dump(temp, file_P1412_objects)
+        file_P1412_objects.close()
+        file_P1412_subjects = open("P1412_dictio_wikidata_subjects.json", "w")
+        temp = {}
+        temp["P1412"] = dictio_wikidata_subjects["P1412"]
+        json.dump(temp, file_P1412_subjects)
+        file_P1412_subjects.close()
+
+        file_objects = open("dictio_wikidata_objects.json", "w")
+        json.dump(dictio_wikidata_objects, file_objects)
+        file_objects.close()
+        file_subjects = open("dictio_wikidata_subjects.json", "w")
+        json.dump(dictio_wikidata_subjects, file_subjects)
+        file_subjects.close()
     return dictio_wikidata_subjects, dictio_wikidata_objects
 
 
@@ -638,7 +661,7 @@ if __name__ == '__main__':
     #    else:
     #        result = subprocess.Popen(["python", "LAMA/lama/eval_generation.py", "--lm", lm, "--t", query_LM], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
     dictio_config = read_config_file()
-    #dictio_wikidata_subjects, dictio_wikidata_objects = read_dataset_files(dictio_config)
+    dictio_wikidata_subjects, dictio_wikidata_objects = read_dataset_files(dictio_config)
     #dictio_label_id = read_label_id_file(dictio_config)
     #dictio_id_label = read_id_label_file(dictio_config)
     #dictio_prop_probdistribution = read_cardinality_estimation_file(dictio_config)
@@ -646,8 +669,8 @@ if __name__ == '__main__':
     #dictio_prop_classes = read_prop_classes_file(dictio_config)
     data = {}
     data["config"] = dictio_config
-    #data["wikidata_subjects"] = dictio_wikidata_subjects
-    #ata["wikidata_objects"] = dictio_wikidata_objects
+    data["wikidata_subjects"] = dictio_wikidata_subjects
+    data["wikidata_objects"] = dictio_wikidata_objects
     #data["label_id"] = dictio_label_id
     #data["id_label"] = dictio_id_label
     #data["prop_probdistribution"] = dictio_prop_probdistribution
