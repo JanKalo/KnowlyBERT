@@ -54,15 +54,13 @@ def get_ents_in_sent(
     return sent_ents
 
 
-
-
 def index_sentences(input_path, entityPairs, relation, entityLabels):
     maxLength = 15
     index = []
     for file in os.listdir(input_path):
         with open(os.path.join(input_path,file), "r") as f:
             jsonf = json.load(f)
-        if len(index) >= 100:
+        if len(index) >= 500:
             break
 
         print(len(index))
@@ -274,8 +272,8 @@ def find_similar_sentences(index, entity2Labels):
         else:
             subject_object_template = orig_sentence[:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:]
         if subject_object_template not in unique_templates:
-            if not re.match(".*[0-9][0-9][0-9][0-9].*", subject_object_template):
-                unique_templates[subject_object_template] = sentence
+            #if not re.match(".*[0-9][0-9][0-9][0-9].*", subject_object_template):
+            unique_templates[subject_object_template] = sentence
 
     for template in unique_templates:
         find_suitable_key_template = False
@@ -294,10 +292,10 @@ def find_similar_sentences(index, entity2Labels):
         if find_suitable_key_template == False:
             similar_templates[template] = []
 
-    for sent in similar_templates:
-        print("{} --> {}\n".format(sent, similar_templates[sent]))
-    print(len(index))
-    print(len(similar_templates))
+    #for sent in similar_templates:
+    #    print("{} --> {}\n".format(sent, similar_templates[sent]))
+    #print(len(index))
+    #print(len(similar_templates))
     for key_template in similar_templates:
         shortest_template = key_template
         for similar in similar_templates[key_template]:
@@ -314,48 +312,49 @@ if __name__ == '__main__':
         with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as lm_build_file:
             models[lm] = dill.load(lm_build_file)
 
-    prop = "P36"
-    for model_name, model in models.items():
-        if os.path.exists("{}_data".format(prop)):
-            with open("{}_data".format(prop), 'rb') as prop_data_file:
-                prop_data = dill.load(prop_data_file)
-                print("read prop data file")
-                print('Found {} entity pairs for the relation.'.format(len(prop_data["ent"])))
-        else:
-            entities, entity2Labels, label2Entities = get_entities("http://www.wikidata.org/prop/direct/{}".format(prop))
-            print('Found {} entity pairs for the relation.'.format(len(entities)))
-            index = index_sentences("/home/kalo/TREx", entities, "http://www.wikidata.org/prop/direct/{}".format(prop), entity2Labels)
-
-            with open("{}_data".format(prop), 'wb') as prop_data_file:
-                prop_data = {}
-                prop_data["ent"] = entities
-                prop_data["ent2Label"] = entity2Labels
-                prop_data["label2ent"] = label2Entities
-                prop_data["index"] = index
-                dill.dump(prop_data, prop_data_file)
-
-        results = {}
-        filtered_index = find_similar_sentences(prop_data["index"], prop_data["ent2Label"])
-        
-        for sentence in filtered_index:
-            score = rank_sentences_2(model, sentence, prop_data["ent"] , prop_data["ent2Label"], prop_data["label2ent"])
-            orig_sentence = sentence["sentence"]
-            if sentence['e1'][0] < sentence['e2'][0]:
-                subject_object_template = orig_sentence[:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:]
+    props = ['P463', 'P421', 'P1343', 'P27', 'P106', 'P735', 'P1412', 'P21', 'P69', 'P1303', 'P137', 'P407', 'P105', 'P17', 'P5008', 'P495', 'P102', 'P937', 'P140', 'P20', 'P136', 'P282', 'P180', 'P6216', 'P364', 'P462', 'P264', 'P39', 'P166', 'P19', 'P607', 'P108', 'P641', 'P1344', 'P734', 'P413', 'P131', 'P47', 'P710', 'P22', 'P186', 'P1435', 'P2094', 'P4224', 'P971', 'P159', 'P59', 'P881', 'P6259', 'P360', 'P119', 'P276', 'P54', 'P175', 'P195', 'P1001', 'P910', 'P703', 'P527', 'P138', 'P57', 'P2894', 'P681', 'P161', 'P1050', 'P171', 'P127', 'P123', 'P25', 'P680', 'P682', 'P1346', 'P460', 'P361', 'P150', 'P170', 'P155', 'P3373', 'P40', 'P921', 'P2548', 'P1889', 'P26', 'P156', 'P126', 'P1057', 'P688', 'P301', 'P6099', 'P50', 'P684', 'P1433', 'P702', 'P2860', 'P128', 'P6224', 'P7228', 'P7261']
+    for prop in props:
+        for model_name, model in models.items():
+            if os.path.exists("data/{}_data".format(prop)):
+                with open("data/{}_data".format(prop), 'rb') as prop_data_file:
+                    prop_data = dill.load(prop_data_file)
+                    print("read prop data file")
+                    print('Found {} entity pairs for the relation.'.format(len(prop_data["ent"])))
             else:
-                subject_object_template = orig_sentence[:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:]
-            results[subject_object_template] = score
+                entities, entity2Labels, label2Entities = get_entities("http://www.wikidata.org/prop/direct/{}".format(prop))
+                print('Found {} entity pairs for the relation.'.format(len(entities)))
+                index = index_sentences("/home/kalo/TREx", entities, "http://www.wikidata.org/prop/direct/{}".format(prop), entity2Labels)
 
-        sorted_results = {k: v for k, v in sorted(results.items(), reverse=True, key=lambda item: item[1])}
+                with open("data/{}_data".format(prop), 'wb') as prop_data_file:
+                    prop_data = {}
+                    prop_data["ent"] = entities
+                    prop_data["ent2Label"] = entity2Labels
+                    prop_data["label2ent"] = label2Entities
+                    prop_data["index"] = index
+                    dill.dump(prop_data, prop_data_file)
 
-        if os.path.exists("templates.json"):
-            with open("templates.json", "r") as prop_templates_file:
-                prop_templates = json.load(prop_templates_file)
-                prop_templates_file.close()
-                os.remove("templates.json")
-        else:
-            prop_templates = {}
+            results = {}
+            filtered_index = find_similar_sentences(prop_data["index"], prop_data["ent2Label"])
+            
+            for sentence in filtered_index:
+                score = rank_sentences_2(model, sentence, prop_data["ent"] , prop_data["ent2Label"], prop_data["label2ent"])
+                orig_sentence = sentence["sentence"]
+                if sentence['e1'][0] < sentence['e2'][0]:
+                    subject_object_template = orig_sentence[:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:]
+                else:
+                    subject_object_template = orig_sentence[:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:]
+                results[subject_object_template] = score
 
-        with open("templates.json", "w") as prop_templates_file:
-            prop_templates[prop] = sorted_results
-            json.dump(prop_templates, prop_templates_file)
+            sorted_results = {k: v for k, v in sorted(results.items(), reverse=True, key=lambda item: item[1])}
+
+            if os.path.exists("templates.json"):
+                with open("templates.json", "r") as prop_templates_file:
+                    prop_templates = json.load(prop_templates_file)
+                    prop_templates_file.close()
+                    os.remove("templates.json")
+            else:
+                prop_templates = {}
+
+            with open("templates.json", "w") as prop_templates_file:
+                prop_templates[prop] = sorted_results
+                json.dump(prop_templates, prop_templates_file)
