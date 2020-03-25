@@ -436,17 +436,17 @@ def write_into_files(i, folder, mc, cep, tmc, tmp, file_evaluation, hybrid_outpu
 
 def handeling_output(parameter, hybrid_output, list_hybrid_log, list_errors, string_random_outdated):
     if hybrid_output != []:
-        if len(parameter["mc"]) == 1 and len(parameter["cep"]) == 1 and len(parameter["cep"]) == 1 and len(parameter["tmp"]) == 1:
+        if len(parameter["mc"]) == 1 and len(parameter["cep"]) == 1 and len(parameter["tmc"]) == 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
             os.mkdir("evaluation/{}_ts_{}_{}_{}".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"]))
             file_evaluation = open("evaluation/{}_ts_{}_{}_{}/eval_ts_{}_{}_{}_{}.txt".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"], parameter["ts"], string_random_outdated, parameter["lm"], date_time), "w")
             folder = "{}_ts_{}_{}_{}".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"])
             file_evaluation.write(parameter["queries_path"]+"\n\n")
             mc_value = parameter["mc"][0]
-            tp_value = parameter["cep"][0]
+            cep_value = parameter["cep"][0]
             tmc_value = parameter["tmc"][0]
             tmp_value = parameter["tmp"][0]
-            write_into_files(0, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter)
+            write_into_files(0, folder, mc_value, cep_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter)
             file_evaluation.close()
         elif len(parameter["mc"]) > 1 and len(parameter["cep"]) == 1 and len(parameter["tmc"]) == 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
@@ -455,12 +455,12 @@ def handeling_output(parameter, hybrid_output, list_hybrid_log, list_errors, str
             folder = "{}_mc_ts_{}_{}_{}".format(date_time, parameter["ts"], string_random_outdated, parameter["lm"])
             file_evaluation.write("mc "+str(parameter["mc"])+"\n")
             file_evaluation.write(parameter["queries_path"]+"\n\n")
-            tp_value = parameter["cep"][0]
+            cep_value = parameter["cep"][0]
             tmc_value = parameter["tmc"][0]
             tmp_value = parameter["tmp"][0]
             for i in range (0, len(parameter["mc"])):
                 mc_value = parameter["mc"][i]
-                write_into_files(i, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter) 
+                write_into_files(i, folder, mc_value, cep_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter) 
             file_evaluation.close()
         elif len(parameter["mc"]) == 1 and len(parameter["cep"]) > 1 and len(parameter["tmc"]) == 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
@@ -473,8 +473,8 @@ def handeling_output(parameter, hybrid_output, list_hybrid_log, list_errors, str
             tmc_value = parameter["tmc"][0]
             tmp_value = parameter["tmp"][0]
             for i in range (0, len(parameter["cep"])):
-                tp_value = parameter["cep"][i]
-                write_into_files(i, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter) 
+                cep_value = parameter["cep"][i]
+                write_into_files(i, folder, mc_value, cep_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter) 
             file_evaluation.close()
         elif len(parameter["mc"]) == 1 and len(parameter["cep"]) == 1 and len(parameter["tmc"]) > 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
@@ -484,11 +484,11 @@ def handeling_output(parameter, hybrid_output, list_hybrid_log, list_errors, str
             file_evaluation.write("tmc "+str(parameter["tmc"])+"\n")
             file_evaluation.write(parameter["queries_path"]+"\n\n")
             mc_value = parameter["mc"][0]
-            tp_value = parameter["cep"][0]
+            cep_value = parameter["cep"][0]
             tmp_value = parameter["tmp"][0]
             for i in range (0, len(parameter["tmc"])):
                 tmc_value = parameter["tmc"][i]
-                write_into_files(i, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter) 
+                write_into_files(i, folder, mc_value, cep_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter) 
             file_evaluation.close()
         elif len(parameter["mc"]) == 1 and len(parameter["cep"]) == 1 and len(parameter["tmc"]) == 1 and len(parameter["tmp"]) > 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
@@ -498,11 +498,11 @@ def handeling_output(parameter, hybrid_output, list_hybrid_log, list_errors, str
             file_evaluation.write("tmp "+str(parameter["tmp"])+"\n")
             file_evaluation.write(parameter["queries_path"]+"\n\n")
             mc_value = parameter["mc"][0]
-            tp_value = parameter["cep"][0]
+            cep_value = parameter["cep"][0]
             tmc_value = parameter["tmc"][0]
             for i in range (0, len(parameter["tmp"])):
                 tmp_value = parameter["tmp"][i]
-                write_into_files(i, folder, mc_value, tp_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter) 
+                write_into_files(i, folder, mc_value, cep_value, tmc_value, tmp_value, file_evaluation, hybrid_output, list_hybrid_log, list_errors, parameter) 
             file_evaluation.close()
     else:
         print("Hybrid returns no results")
@@ -671,15 +671,15 @@ if __name__ == '__main__':
 
     evaluations = []
     #wikidata_incomplete: version how incomplete wikidata was created: "random_incomplete" (or "outdated_incomplete")
-    #file_queries: path to an query .nt file
+    #file_queries: path to an query file
     #lm: name of the Language Model(LM)
     #mc: hardcoded maximum confusion
     #mr: hardcoded max results which LM should add
-    #ces: threshold for sampling size at cardinality estimation
-    #cep: threshold for percentage at cardinality estimation
-    #tmc: threshold for confusion at threshold calculation for confusion
-    #tmn: threshold for number of results at threshold calculation for confusion
-    #tmp: threshold for percentage at threshold calculation for confusion
+    #ces: threshold for sampling size at cardinality estimation --> not activated: -1
+    #cep: threshold for percentage at cardinality estimation --> not activated: -1
+    #tmc: threshold for confusion at threshold calculation for confusion --> not activated: 0
+    #tmn: threshold for number of results at threshold calculation for confusion --> not activated: 0
+    #tmp: threshold for percentage at threshold calculation for confusion --> not activated: 0
     #ts: value how many templates should be used
     #apc: value wheather the proptery classes should always be used
 
@@ -692,9 +692,9 @@ if __name__ == '__main__':
     parameter["mr"] = 1
     parameter["ces"] = -1
     parameter["cep"] = [-1]
-    parameter["tmc"] = [0]
-    parameter["tmn"] = 0
-    parameter["tmp"] = [0]
+    parameter["tmc"] = [-0.5, -1, -1.5, -2, -3, -4]
+    parameter["tmn"] = 10
+    parameter["tmp"] = [0.5]
     parameter["ts"] = 1
     parameter["apc"] = False
     if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
@@ -706,6 +706,7 @@ if __name__ == '__main__':
     for parameter in evaluations:
         start = timeit.default_timer()
         hybrid_output, list_hybrid_log, list_errors = hybrid_system.execute(dictio_config, parameter, data)
+        print(hybrid_output)
         stop = timeit.default_timer()
         handeling_output(parameter, hybrid_output, list_hybrid_log, list_errors, parameter["wikidata_incomplete"].split("_")[0])
         print('Time: {}min'.format((stop - start)/60))

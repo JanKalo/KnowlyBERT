@@ -1,5 +1,5 @@
 import numpy as np
-import triangle_method.plot_histogram as histogram
+import threshold_method.plot_histogram as histogram
 
 def find(query, results_LM, max_confusion, max_number, max_percentage):
     save_histogram = False

@@ -60,11 +60,10 @@ def execute_query(tripel, parameter, data):
             labels = set(data["label_id"].keys())
             print("START LAMA")
             result_LM = rank_with_templates.get_ranking(label_subj, tripel[1], label_obj, data["lm_build"], labels, data["prop_template"], parameter["ts"])
-            print(result_LM)
             possible_results_LM, not_in_dictionary, errors_LM, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID = helper_functions.find_results_LM(result_LM, results_KG_complete, expected_classes, data)
             for error in errors_LM:
                 errors.append(error)
-            return_list = helper_functions.get_all_results(parameter, data, tripel[1], "", possible_results_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_incomplete, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID, errors)
+            return_list = helper_functions.get_all_results(parameter, data, tripel[1], "{} {} {}".format(label_subj, tripel[1], label_obj), possible_results_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_incomplete, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID, errors)
         else:
             return_list = [None, None, None, errors]
     except KeyboardInterrupt:
@@ -84,7 +83,7 @@ def execute_query(tripel, parameter, data):
         return_list = [None, [tripel], None, errors]
     finally:
         #print("finally end process")
-        print(return_list)
+        #print(return_list)
         return return_list
 
 def init(l):
@@ -126,14 +125,14 @@ def execute(dictio_config, parameter, data):
         #pool.close()
         #pool.join()
         output_first_try = []
-        #count = 0
+        count = 0
         for (s, p, o) in queries:
-            #if count == 1:
-            #    break
+            if count == 1:
+                break
             tripel = [s, p, o]
             result = execute_query(tripel, parameter, data)
             output_first_try.append(result)
-            #count = count + 1
+            count = count + 1
         #print(output_first_try)
         global all_retry_queries
         all_retry_queries = []
