@@ -583,12 +583,12 @@ def read_dataset_files(dictio_config):
         json.dump(temp, file_P1412_subjects)
         file_P1412_subjects.close()
 
-        file_objects = open("dictio_wikidata_objects.json", "w")
-        json.dump(dictio_wikidata_objects, file_objects)
-        file_objects.close()
-        file_subjects = open("dictio_wikidata_subjects.json", "w")
-        json.dump(dictio_wikidata_subjects, file_subjects)
-        file_subjects.close()
+        #file_objects = open("dictio_wikidata_objects.json", "w")
+        #json.dump(dictio_wikidata_objects, file_objects)
+        #file_objects.close()
+        #file_subjects = open("dictio_wikidata_subjects.json", "w")
+        #json.dump(dictio_wikidata_subjects, file_subjects)
+        #file_subjects.close()
     return dictio_wikidata_subjects, dictio_wikidata_objects
 
 
@@ -597,26 +597,16 @@ def read_label_id_file(dictio_config):
     #parsing the label-ID-dictionary
     dictio_label_id = {}
     label_id_file = open(dictio_config["label_id_path"], "r")
-    line = label_id_file.readline().split("\n")[0]
-    while line != "":
-        data = json.loads(line)
-        label = list(data.keys())
-        dictio_label_id[label[0]] = data[label[0]]
-        line = label_id_file.readline().split("\n")[0]
+    dictio_label_id = json.load(label_id_file)
     label_id_file.close()
     return dictio_label_id
 
 def read_id_label_file(dictio_config):
-    #parsing the ID-label-dictionary TODO
+    #parsing the ID-label-dictionary
     dictio_id_label = {}
-    #id_label_file = open(dictio_config["id_label_path"], "r")
-    #line = id_label_file.readline().split("\n")[0]
-    #while line != "":
-    #    data = json.loads(line)
-    #    label = list(data.keys())
-    #     dictio_id_label[label[0]] = data[label[0]]
-    #    line = id_label_file.readline().split("\n")[0]
-    #id_label_file.close()
+    id_label_file = open(dictio_config["id_label_path"], "r")
+    dictio_id_label = json.load(id_label_file)
+    id_label_file.close()
     return dictio_id_label
 
 def read_cardinality_estimation_file(dictio_config):
@@ -662,20 +652,21 @@ if __name__ == '__main__':
     #        result = subprocess.Popen(["python", "LAMA/lama/eval_generation.py", "--lm", lm, "--t", query_LM], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
     dictio_config = read_config_file()
     dictio_wikidata_subjects, dictio_wikidata_objects = read_dataset_files(dictio_config)
-    #dictio_label_id = read_label_id_file(dictio_config)
-    #dictio_id_label = read_id_label_file(dictio_config)
+    dictio_label_id = read_label_id_file(dictio_config)
+    dictio_id_label = read_id_label_file(dictio_config)
     #dictio_prop_probdistribution = read_cardinality_estimation_file(dictio_config)
-    #dictio_prop_templates = read_template_file(dictio_config)
-    #dictio_prop_classes = read_prop_classes_file(dictio_config)
+    dictio_prop_templates = read_template_file(dictio_config)
+    dictio_prop_classes = read_prop_classes_file(dictio_config)
+
     data = {}
     data["config"] = dictio_config
     data["wikidata_subjects"] = dictio_wikidata_subjects
     data["wikidata_objects"] = dictio_wikidata_objects
-    #data["label_id"] = dictio_label_id
-    #data["id_label"] = dictio_id_label
+    data["label_id"] = dictio_label_id
+    data["id_label"] = dictio_id_label
     #data["prop_probdistribution"] = dictio_prop_probdistribution
-    #data["prop_template"] = dictio_prop_templates
-    #data["prop_classes"] = dictio_prop_classes
+    data["prop_template"] = dictio_prop_templates
+    data["prop_classes"] = dictio_prop_classes
     print("read all data files")
 
     evaluations = []
@@ -699,11 +690,11 @@ if __name__ == '__main__':
     parameter["lm"] = "bert"
     parameter["mc"] = [-7]
     parameter["mr"] = 1
-    parameter["ces"] = 1000
-    parameter["cep"] = [0.5]
-    parameter["tmc"] = [-1, -1.1, -1.2, -1.3, -1.4, -1.5, -2, -3, -4]
-    parameter["tmn"] = 10
-    parameter["tmp"] = [0.5]
+    parameter["ces"] = -1
+    parameter["cep"] = [-1]
+    parameter["tmc"] = [0]
+    parameter["tmn"] = 0
+    parameter["tmp"] = [0]
     parameter["ts"] = 1
     parameter["apc"] = False
     if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
@@ -714,7 +705,7 @@ if __name__ == '__main__':
     runtime = []
     for parameter in evaluations:
         start = timeit.default_timer()
-        hybrid_output, list_hybrid_log, list_errors = hybrid_system.execute(parameter, data)
+        hybrid_output, list_hybrid_log, list_errors = hybrid_system.execute(dictio_config, parameter, data)
         stop = timeit.default_timer()
         handeling_output(parameter, hybrid_output, list_hybrid_log, list_errors, parameter["wikidata_incomplete"].split("_")[0])
         print('Time: {}min'.format((stop - start)/60))

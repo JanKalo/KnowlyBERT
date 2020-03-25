@@ -2,61 +2,26 @@ import pyodbc
 import json
 import os
 
-# Specifying the ODBC driver, server name, database, etc. directly
-cnxn = pyodbc.connect('DRIVER={/home/fichtel/virtodbc_r.so};HOST=134.169.32.169:1112;DATABASE=Virtuoso;UID=dba;PWD=F4B656JXqBG')
-cnxn.setdecoding(pyodbc.SQL_CHAR, encoding='utf-8')
-cnxn.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
-# Create a cursor from the connection
-cursor = cnxn.cursor()
+if __name__ == '__main__':
+    file_label_ID = open("/home/kalo/conferences/iswc2020/data/dictio_label_id_multi_token.json", "r")
+    dictio_label_id = json.load(file_label_ID)
+    file_label_ID.close()
 
-def main():
-    props = ["P31", "P279", "P361"]
-    entities = {}
-    for p in props:
-        try:
-            print(p)
-            query = """SELECT DISTINCT ?item ?itemLabel
-                    WHERE {{
-                        ?item <http://www.wikidata.org/prop/direct/{}> ?id
-                        OPTIONAL {{
-                            ?item <http://www.w3.org/2000/01/rdf-schema#label> ?itemLabel.
-                            FILTER(LANG(?itemLabel) = "en").
-                        }}
-                    }}""".format(p)
-            cursor.execute("SPARQL "+query)
-            while True:
-                row = cursor.fetchone()
-                if not row:
-                    break
-                if row.itemLabel != None:
-                    item_label = row.itemLabel
-                    if len(item_label.split(" ")) <= 3:
-                        item_id = row.item
-                        if item_label not in entities:
-                            item_id_list = [item_id]
-                            entities[item_label] = item_id_list
-                        else:
-                            item_id_list = entities[item_label]
-                            if item_id not in item_id_list:
-                                item_id_list.append(item_id)
-        except KeyboardInterrupt:
-            continue
-        except Exception as e:
-            print(e)
-            continue
-    #open a txt-file to save the data
+    dictio_label_id_cleaned = {}
+    for label in dictio_label_id:
+        ids = dictio_label_id[label]
+        ids_cleaned = []
+        for id in ids:
+            if id.split('/')[-1] not in ids_cleaned:
+                ids_cleaned.append(id.split('/')[-1])
+        dictio_label_id_cleaned[label] = ids_cleaned
+
+    #open a json-file to save the data
     print("open file...")
     if os.path.exists("dictio_label_id_multi_token.json"):
        os.remove("dictio_label_id_multi_token.json")
     file = open("dictio_label_id_multi_token.json", "w")
-    for label in entities:
-        temp = {}
-        temp[label] = entities[label]
-        json.dump(temp, file)
-        file.write("\n")
+    json.dump(dictio_label_id_cleaned, file)
     file.close()
-    print("...result written to txt :)")
-
-if __name__ == '__main__':
-    main()
+    print("...result written to json :)")
 

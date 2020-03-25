@@ -1,6 +1,5 @@
 import argparse
 import shlex, subprocess
-import pyodbc
 import signal
 import sys, traceback
 from time import sleep
@@ -10,6 +9,7 @@ import timeit
 import json
 import helper_functions
 import LAMA.templates.rank_with_templates as rank_with_templates
+import dill
 
 class KeyboardInterruptError(Exception): pass
 
@@ -28,7 +28,7 @@ def execute_query(tripel, parameter, data):
     return_list = [None, None, None, None]
     errors = []
     try:
-        print("start process")
+        #print("start process")
         #results of complete Knowledge Graph
         results_KG_complete, errors_KG_complete = helper_functions.find_results_KG_complete(tripel, data)
         for error in errors_KG_complete:
@@ -39,34 +39,32 @@ def execute_query(tripel, parameter, data):
         number_of_KG_results_incomplete = len(results_KG_incomplete)
         for error in errors_KG_incomplete:
             errors.append(error)
-
+        print(tripel, results_KG_complete, results_KG_incomplete)
         #Language Model
         label_subj = helper_functions.find_label(tripel[0], data)
-        label_prop = helper_functions.find_label(tripel[1], data)
         label_obj = helper_functions.find_label(tripel[2], data)
         if "WARNING" in label_subj:
             errors.append(label_subj) 
-        if "WARNING" in label_prop:
-            errors.append(label_prop) 
         if "WARNING" in label_obj:
             errors.append(label_obj) 
         
-        if ("WARNING" not in label_subj and "WARNING" not in label_prop and "WARNING" not in label_obj):
+        if ("WARNING" not in label_subj and "WARNING" not in label_obj):
             if parameter["apc"] or results_KG_incomplete == {}:
-                if label_subj == "?":
+                if label_subj == '?':
                     expected_classes = data["prop_classes"][tripel[1]]["?PQ"]
-                elif label_obj == "?":
+                elif label_obj == '?':
                     expected_classes = data["prop_classes"][tripel[1]]["QP?"]
                 else:
                     raise Exception("Tripel is in a wrong format {}".format(tripel))
             
             labels = set(data["label_id"].keys())
             print("START LAMA")
-            result_LM = rank_with_templates.get_ranking(tripel[0], tripel[1], tripel[2], data["lm_model"], labels, data["prop_template"], parameter["ts"])
+            result_LM = rank_with_templates.get_ranking(label_subj, tripel[1], label_obj, data["lm_build"], labels, data["prop_template"], parameter["ts"])
+            print(result_LM)
             possible_results_LM, not_in_dictionary, errors_LM, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID = helper_functions.find_results_LM(result_LM, results_KG_complete, expected_classes, data)
             for error in errors_LM:
                 errors.append(error)
-            return_list = helper_functions.get_all_results(items[1], query_LM, possible_results_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_incomplete,cursor_complete,dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID, errors)
+            return_list = helper_functions.get_all_results(parameter, data, tripel[1], "", possible_results_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_incomplete, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID, errors)
         else:
             return_list = [None, None, None, errors]
     except KeyboardInterrupt:
@@ -85,7 +83,8 @@ def execute_query(tripel, parameter, data):
         errors.append(error_string)
         return_list = [None, [tripel], None, errors]
     finally:
-        print("finally end process")
+        #print("finally end process")
+        print(return_list)
         return return_list
 
 def init(l):
@@ -93,7 +92,8 @@ def init(l):
     lock = l
 
 #execute the hybrid system
-def execute (parameter, data):
+def execute(dictio_config, parameter, data):
+    #read example file for queries
     queries_file = open(parameter["queries_path"], "r")
     queries = set()
     line = queries_file.readline().replace("\n", "")
@@ -106,58 +106,80 @@ def execute (parameter, data):
             queries.add((subj, prop, obj))
         line = queries_file.readline().replace("\n", "")
     print("parsed example file")
-    print(queries)
-    pool = None
+
+    #load lm TODO create lm build file
+    path = dictio_config["lm_build_path_template"].replace("<name>", parameter["lm"])
+    with open(path, 'rb') as lm_build_file:
+        data["lm_build"] = dill.load(lm_build_file)
+     
+
+    #pool = None
     results_all_processes = []
     log = []
     errors = []
     try:
         print("start hybrid system")
-        l = Lock()
-        pool = Pool(processes=1, initializer=init, initargs=(l,))
-        results = [pool.apply_async(execute_query, args=(tripel, parameter, data)) for tripel in queries]
-        output_first_try = [res.get() for res in results]
-        pool.close()
-        pool.join()
+        #l = Lock()
+        #pool = Pool(processes=1, initializer=init, initargs=(l,))
+        #results = [pool.apply_async(execute_query, args=(tripel, parameter, data)) for tripel in queries]
+        #output_first_try = [res.get() for res in results]
+        #pool.close()
+        #pool.join()
+        output_first_try = []
+        #count = 0
+        for (s, p, o) in queries:
+            #if count == 1:
+            #    break
+            tripel = [s, p, o]
+            result = execute_query(tripel, parameter, data)
+            output_first_try.append(result)
+            #count = count + 1
+        #print(output_first_try)
         global all_retry_queries
         all_retry_queries = []
         for o in output_first_try:
-            for actu in o[1]:
-                if actu != None:
-                    all_retry_queries.append(actu)
+            if o[1] != None:
+                for actu in o[1]:
+                    if actu != None:
+                        all_retry_queries.append(actu)
         
         output_retry = []
         if all_retry_queries != []:
             print("Try it again: {}".format(all_retry_queries))
-            pool = Pool(processes=1, initializer=init, initargs=(l,))
-            results = [pool.apply_async(execute_query, args=(tripel, parameter, data)) for tripel in queries]
-            output_retry = [res.get() for res in results]
-            pool.close()
-            pool.join()
+            #pool = Pool(processes=1, initializer=init, initargs=(l,))
+            #results = [pool.apply_async(execute_query, args=(tripel, parameter, data)) for tripel in all_retry_queries]
+            #output_retry = [res.get() for res in results]
+            #pool.close()
+            #pool.join()
+            for tripel in all_retry_queries:
+                result = execute_query(tripel, parameter, data)
+                output_retry.append(result)
         
         for o in output_first_try:
-            for err in o[3]:
-                errors.append(err)
-            if o and o[0] != None:
-                results_all_processes.append(o[0])
-                log.append(o[2])
+            if o != [None, None, None, None]:
+                for err in o[3]:
+                    errors.append(err)
+                if o[0] != None:
+                    results_all_processes.append(o[0])
+                    log.append(o[2])
         for o in output_retry:
-            for err in o[3]:
-                errors.append(err)
-            if o and o[0] != None:
-                results_all_processes.append(o[0])
-                log.append(o[2])
+            if o != [None, None, None, None]:
+                for err in o[3]:
+                    errors.append(err)
+                if o[0] != None:
+                    results_all_processes.append(o[0])
+                    log.append(o[2])
         
     except KeyboardInterrupt:
         print ("Keyboard interrupt in main")
-        if pool:
-            pool.terminate()
+        #if pool:
+        #    pool.terminate()
         results_all_processes = []
     except:
         print("Exception in Main")
         traceback.print_exc(file=sys.stdout)
-        if pool:
-            pool.terminate()
+        #if pool:
+        #    pool.terminate()
         results_all_processes = []
     finally:
         print ("Cleaning up Main")
