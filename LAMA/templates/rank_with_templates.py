@@ -67,22 +67,18 @@ def merge_rankings(results_per_template):
                     intermediate_rank[label] = confusion
             else:
                 intermediate_rank[label] = confusion
-    ordered_results = {k: v for k, v in sorted(intermediate_rank.items(), key=lambda item: item[1], reverse=True)}
+    
+    return [(k, v) for k, v in intermediate_rank.items()]
 
-
-    return [(k, v) for k, v in ordered_results.items()]
-
-def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templates=10):
+def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templates):
 
     merged_ranking = []
-
+    
     #get rankings for property and sort by confidence ranking
     templates = templatesDictionary[r]
-    ranked_templates = {k: v for k, v in sorted(templates.items(), key=lambda item: item[1], reverse=True)}
-
     #get results for each template
     result_per_templates = []
-    for template, confidence in dict(islice(ranked_templates.items(), no_templates)).items():
+    for template, confidence in dict(islice(templates.items(), no_templates)).items():
         #build sentence for query
 
         if e1 == "?":
@@ -94,14 +90,10 @@ def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templat
 
         result_per_templates.append((mt.get_multi_token_results(instantiated_template, model, entity_labels), confidence))
 
-
     return merge_rankings(result_per_templates)
+
 import dill
 import os
-
-
-
-
 if __name__ == '__main__':
 
     lm = "bert"
