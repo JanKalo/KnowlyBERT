@@ -84,8 +84,8 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
                                         if (e1['uri'],e2['uri']) in entityPairs:
                                             e1_too_short_surfaceform = False
 
-                                            if e1['boundaries'][1] - e1['boundaries'][0] != len(entityLabels[e1['uri']]):
-                                                e1_label_token = entityLabels[e1['uri']].split(" ")
+                                            if e1['boundaries'][1] - e1['boundaries'][0] != len(entityLabels[e1['uri']][0]):
+                                                e1_label_token = entityLabels[e1['uri']][0].split(" ")
                                                 for token in e1_label_token:
                                                     if token in e1["surfaceform"].split(" "):
                                                         e1_too_short_surfaceform = True
@@ -93,8 +93,8 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
                                                         #print("label:{}, surfaceform:{}\n".format(entityLabels[e1['uri']], e1["surfaceform"]))
                                                         break
                                             e2_too_short_surfaceform = False
-                                            if e2['boundaries'][1] - e2['boundaries'][0] != len(entityLabels[e2['uri']]):
-                                                e2_label_token = entityLabels[e2['uri']].split(" ")
+                                            if e2['boundaries'][1] - e2['boundaries'][0] != len(entityLabels[e2['uri']][0]):
+                                                e2_label_token = entityLabels[e2['uri']][0].split(" ")
                                                 for token in e2_label_token:
                                                     if token in e2["surfaceform"].split(" "):
                                                         e2_too_short_surfaceform = True
@@ -105,12 +105,12 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
                                             if e1_too_short_surfaceform == False and e2_too_short_surfaceform == False:
                                                 entry = {}
                                                 #check wheather label has maximum length of 3, because multi_token.py handles maximum 3 [MASK]
-                                                if len(entityLabels[e1['uri']].split(" ")) <= 3 and len(entityLabels[e2['uri']].split(" ")) <= 3:
+                                                if len(entityLabels[e1['uri']][0].split(" ")) <= 3 and len(entityLabels[e2['uri']][0].split(" ")) <= 3:
                                                     #replace the current surfaceform with the label of wikidata, which are used
                                                     if e1['boundaries'][0] < e2['boundaries'][0]:
-                                                        sentence = sent[:e1['boundaries'][0]] + entityLabels[e1['uri']] + sent[e1['boundaries'][1]:e2['boundaries'][0]] + entityLabels[e2['uri']] + sent[e2['boundaries'][1]:]
+                                                        sentence = sent[:e1['boundaries'][0]] + entityLabels[e1['uri']][0] + sent[e1['boundaries'][1]:e2['boundaries'][0]] + entityLabels[e2['uri']][0] + sent[e2['boundaries'][1]:]
                                                     elif e1['boundaries'][0] > e2['boundaries'][0]:
-                                                        sentence = sent[:e2['boundaries'][0]] + entityLabels[e2['uri']] + sent[e2['boundaries'][1]:e1['boundaries'][0]] + entityLabels[e1['uri']] + sent[e1['boundaries'][1]:]
+                                                        sentence = sent[:e2['boundaries'][0]] + entityLabels[e2['uri']][0] + sent[e2['boundaries'][1]:e1['boundaries'][0]] + entityLabels[e1['uri']][0] + sent[e1['boundaries'][1]:]
                                                     else:
                                                         sentence = -1
                                                         print("subject==object --> sentence: {}, surfaceform: {}".format(sent ,e1["surfaceform"]))
@@ -121,19 +121,19 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
 
                                                         #adjust boundaries
                                                         if e1['boundaries'][0] < e2['boundaries'][0]:
-                                                            e1_boundary_diff = len(entityLabels[e1['uri']]) - (e1['boundaries'][1] - e1['boundaries'][0])
+                                                            e1_boundary_diff = len(entityLabels[e1['uri']][0]) - (e1['boundaries'][1] - e1['boundaries'][0])
                                                             entry['e1'] = e1['boundaries'][:]
-                                                            entry['e1'][1] = entry['e1'][0] + len(entityLabels[e1['uri']])
+                                                            entry['e1'][1] = entry['e1'][0] + len(entityLabels[e1['uri']][0])
                                                             entry['e2'] = e2['boundaries']
                                                             entry['e2'][0] = entry['e2'][0] + e1_boundary_diff
-                                                            entry['e2'][1] = entry['e2'][0] + len(entityLabels[e2['uri']])
+                                                            entry['e2'][1] = entry['e2'][0] + len(entityLabels[e2['uri']][0])
                                                         elif e1['boundaries'][0] > e2['boundaries'][0]:
-                                                            e2_boundary_diff = len(entityLabels[e2['uri']]) - (e2['boundaries'][1] - e2['boundaries'][0])
+                                                            e2_boundary_diff = len(entityLabels[e2['uri']][0]) - (e2['boundaries'][1] - e2['boundaries'][0])
                                                             entry['e2'] = e2['boundaries'][:]
-                                                            entry['e2'][1] = entry['e2'][0] + len(entityLabels[e2['uri']])
+                                                            entry['e2'][1] = entry['e2'][0] + len(entityLabels[e2['uri']][0])
                                                             entry['e1'] = e1['boundaries']
                                                             entry['e1'][0] = entry['e1'][0] + e2_boundary_diff
-                                                            entry['e1'][1] = entry['e1'][0] + len(entityLabels[e1['uri']])
+                                                            entry['e1'][1] = entry['e1'][0] + len(entityLabels[e1['uri']][0])
 
                                                         index.append(entry)
                                     except KeyError:
@@ -151,12 +151,14 @@ def get_entitis_file(input_path):
         try:
             s,p,o = line.split("> <")
             s = s.replace("<", "")
-            o = o.replace(">\n","")
+            o = o.replace("> .\n","")
             p = p.replace("http://www.wikidata.org/prop/direct/","")
             if p in relation_dict:
                 relation_dict[p].add((s,o))
             else:
-                relation_dict[p] = set((s,o))
+                pairs = set()
+                pairs.add((s,o))
+                relation_dict[p] = pairs
         except ValueError:
             continue
     return relation_dict
@@ -280,9 +282,10 @@ def rank_sentences_2(model, index_entry, entityPairs, entity2Labels, label2Entit
     #compute the overlap with correct labels
     s_labels = set()
     o_labels = set()
+
     for (s,o) in entityPairs:
-        s_labels.add(entity2Labels[s])
-        o_labels.add(entity2Labels[o])
+        s_labels.add(entity2Labels[s][0])
+        o_labels.add(entity2Labels[o][0])
 
     overlap_s = len(s_labels.intersection(results1))
     overlap_o = len(o_labels.intersection(results2))
@@ -345,7 +348,7 @@ if __name__ == '__main__':
         with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as lm_build_file:
             models[lm] = dill.load(lm_build_file)
 
-    props = ['P463', 'P421', 'P1343', 'P27', 'P106', 'P735', 'P1412', 'P21', 'P69', 'P1303', 'P137', 'P407', 'P105', 'P17', 'P5008', 'P495', 'P102', 'P937', 'P140', 'P20', 'P136', 'P282', 'P180', 'P6216', 'P364', 'P462', 'P264', 'P39', 'P166', 'P19', 'P607', 'P108', 'P641', 'P1344', 'P734', 'P413', 'P131', 'P47', 'P710', 'P22', 'P186', 'P1435', 'P2094', 'P4224', 'P971', 'P159', 'P59', 'P881', 'P6259', 'P360', 'P119', 'P276', 'P54', 'P175', 'P195', 'P1001', 'P910', 'P703', 'P527', 'P138', 'P57', 'P2894', 'P681', 'P161', 'P1050', 'P171', 'P127', 'P123', 'P25', 'P680', 'P682', 'P1346', 'P460', 'P361', 'P150', 'P170', 'P155', 'P3373', 'P40', 'P921', 'P2548', 'P1889', 'P26', 'P156', 'P126', 'P1057', 'P688', 'P301', 'P6099', 'P50', 'P684', 'P1433', 'P702', 'P2860', 'P128', 'P6224', 'P7228', 'P7261']
+    props = ['P19', 'P20', 'P279', 'P37', 'P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101', 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412', 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P36', 'P740', 'P361']
     #props = ['P1412']
     for prop in props:
         for model_name, model in models.items():
@@ -357,21 +360,26 @@ if __name__ == '__main__':
             else:
                 #entities, entity2Labels, label2Entities = get_entities_db("http://www.wikidata.org/prop/direct/{}".format(prop))
                 entities = get_entitis_file('/home/kalo/conferences/iswc2020/data/missing_data.nt')
+
+
                 label2Entities, entity2Labels = get_entity_labels_files('/home/kalo/conferences/iswc2020/data/label2entity.json', '/home/kalo/conferences/iswc2020/data/entity2label.json')
                 print('Found {} entity pairs for the relation.'.format(len(entities[prop])))
                 index = index_sentences("/home/kalo/TREx", entities[prop], "http://www.wikidata.org/prop/direct/{}".format(prop), entity2Labels)
 
-                with open("data/{}_data".format(prop), 'wb') as prop_data_file:
-                    prop_data = {}
-                    prop_data["ent"] = entities[prop]
-                    prop_data["ent2Label"] = entity2Labels
-                    prop_data["label2ent"] = label2Entities
-                    prop_data["index"] = index
-                    dill.dump(prop_data, prop_data_file)
+                # with open("data/{}_data".format(prop), 'wb') as prop_data_file:
+                prop_data = {}
+                prop_data["ent"] = entities[prop]
+                prop_data["ent2Label"] = entity2Labels
+                prop_data["label2ent"] = label2Entities
+                prop_data["index"] = index
+                #     dill.dump(prop_data, prop_data_file)
 
             results = {}
             filtered_index = find_similar_sentences(prop_data["index"], prop_data["ent2Label"])
-            
+
+
+
+
             for sentence in filtered_index:
                 score = rank_sentences_2(model, sentence, prop_data["ent"] , prop_data["ent2Label"], prop_data["label2ent"])
                 orig_sentence = sentence["sentence"]
