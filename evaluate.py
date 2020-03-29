@@ -4,7 +4,8 @@ from random import randint
 import time
 import os
 import timeit
-import json
+import simplejson as json
+import pickle
 
 dictio_props = None
 
@@ -594,20 +595,62 @@ def read_dataset_files(dictio_config):
 
 
 def read_label_id_file(dictio_config):
-    #parsing the label-ID-dictionary
-    dictio_label_id = {}
-    label_id_file = open(dictio_config["label_id_path"], "r")
-    dictio_label_id = json.load(label_id_file)
-    label_id_file.close()
+    #TODO only for debugging
+    if os.path.exists("wikidata/dictio_label_id.json"):
+        dictio_label_id = {}
+        label_id_file = open("wikidata/dictio_label_id.json", "r")
+        dictio_label_id = json.load(label_id_file)
+        label_id_file.close()
+    else:
+        #parsing the label-ID-dictionary
+        dictio_label_id = {}
+        label_id_file = open(dictio_config["label_id_path"], "r")
+        dictio = json.load(label_id_file)
+        label_id_file.close()
+        for label in dictio:
+            dictio_label_id[label] = []
+            ids = dictio[label]
+            for ID in ids:
+                dictio_label_id[label].append(str(ID.split('/')[-1].replace('>', "")))
+
+        label_id_file = open("wikidata/dictio_label_id.json", "w")
+        json.dump(dictio_label_id, label_id_file)
+        label_id_file.close()
     return dictio_label_id
 
 def read_id_label_file(dictio_config):
-    #parsing the ID-label-dictionary
-    dictio_id_label = {}
-    id_label_file = open(dictio_config["id_label_path"], "r")
-    dictio_id_label = json.load(id_label_file)
-    id_label_file.close()
+    #TODO only for debugging
+    if os.path.exists("wikidata/dictio_id_label.json"):
+        dictio_id_label = {}
+        id_label_file = open("wikidata/dictio_id_label.json", "r")
+        dictio_id_label = json.load(id_label_file)
+        id_label_file.close()
+    else:
+        #parsing the ID-label-dictionary
+        dictio_id_label = {}
+        id_label_file = open(dictio_config["id_label_path"], "r")
+        dictio = json.load(id_label_file)
+        id_label_file.close()
+        for ID_url in dictio:
+            ID = str(ID_url.split('/')[-1].replace('>', ""))
+            dictio_id_label[ID] = []
+            labels = dictio[ID_url]
+            for label in labels:
+                dictio_id_label[ID].append(label)
+
+        id_label_file = open("wikidata/dictio_id_label.json", "w")
+        json.dump(dictio_id_label, id_label_file)
+        id_label_file.close()
     return dictio_id_label
+
+def read_p31_p279_file(dictio_config):
+    id_p31_file = open(dictio_config["id_p31_path"], "rb")
+    id_p279_file = open(dictio_config["id_p279_path"], "rb")
+    dictio_id_p31 = pickle.load(id_p31_file)
+    dictio_id_p279 = pickle.load(id_p279_file)
+    id_p31_file.close()
+    id_p279_file.close()
+    return dictio_id_p31, dictio_id_p279
 
 def read_cardinality_estimation_file(dictio_config):
     #read json file if cardinality estimation is activated
@@ -626,6 +669,7 @@ def read_template_file(dictio_config):
     dictio_prop_templates = {}
     file_prop_sentence = open(dictio_config["template_path"], "r")
     dictio_prop_templates = json.load(file_prop_sentence)
+    file_prop_sentence.close()
     return dictio_prop_templates
 
 def read_prop_classes_file(dictio_config):
@@ -641,19 +685,11 @@ def read_prop_classes_file(dictio_config):
     return dictio_prop_classes
 
 if __name__ == '__main__':
-    #TODO LM BUILD
-    #if lm == "roberta":
-    #        path = "/data/fichtel/roberta.large/"
-    #        result = subprocess.Popen(["python", "LAMA/lama/eval_generation.py", "--lm", lm, "--rmd", path, "--t", query_LM], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
-    #        #print(result)
-    #    elif lm == "bert":
-    #        result = subprocess.Popen(["python", "LAMA/lama/eval_generation.py", "--lm", lm, "--bmn", "bert-large-cased", "--t", query_LM], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
-    #    else:
-    #        result = subprocess.Popen(["python", "LAMA/lama/eval_generation.py", "--lm", lm, "--t", query_LM], stdout=subprocess.PIPE).communicate()[0].decode('utf-8')
     dictio_config = read_config_file()
     dictio_wikidata_subjects, dictio_wikidata_objects = read_dataset_files(dictio_config)
     dictio_label_id = read_label_id_file(dictio_config)
     dictio_id_label = read_id_label_file(dictio_config)
+    dictio_id_p31, dictio_id_p279 = read_p31_p279_file(dictio_config)
     #dictio_prop_probdistribution = read_cardinality_estimation_file(dictio_config)
     dictio_prop_templates = read_template_file(dictio_config)
     dictio_prop_classes = read_prop_classes_file(dictio_config)
@@ -664,6 +700,8 @@ if __name__ == '__main__':
     data["wikidata_objects"] = dictio_wikidata_objects
     data["label_id"] = dictio_label_id
     data["id_label"] = dictio_id_label
+    data["id_p31"] = dictio_id_p31
+    data["id_p279"] = dictio_id_p279
     #data["prop_probdistribution"] = dictio_prop_probdistribution
     data["prop_template"] = dictio_prop_templates
     data["prop_classes"] = dictio_prop_classes

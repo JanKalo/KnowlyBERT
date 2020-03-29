@@ -1,32 +1,40 @@
 import pyodbc
-import json
+import simplejson as json
 import os
+import pickle
 
-# Specifying the ODBC driver, server name, database, etc. directly
-cnxn = pyodbc.connect('DRIVER={/home/fichtel/virtodbc_r.so};HOST=134.169.32.169:1112;DATABASE=Virtuoso;UID=dba;PWD=F4B656JXqBG')
-cnxn.setdecoding(pyodbc.SQL_CHAR, encoding='utf-8')
-cnxn.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
-# Create a cursor from the connection
-cursor = cnxn.cursor()
-
-def find_class(entity_id_urls):
+#function to find the classes (p31 and pp279) of given entity ids
+def find_class(ids, data):
+    instance_of_dict = data["id_p31"]
+    subclass_of_dict = data["id_p279"]
     classes = {}
-    for url in entity_id_urls:
-        #finding instance
-        query = """SELECT ?instance 
-                WHERE {{
-                    <http://www.wikidata.org/entity/{}> <http://www.wikidata.org/prop/direct/P31> ?instance
-                }}""".format(url)
-        cursor.execute("SPARQL "+query)
-        while True:
-            row = cursor.fetchone()
-            if not row:
-                break
-            if row.instance in classes:
-                classes[row.instance] = classes[row.instance] + 1
-            else:
-                classes[row.instance] = 1
-    sorted_classes = {k: v for k, v in sorted(classes.items(), reverse=True, key=lambda item: item[1])}    
+    for id in ids:
+        if id in instance_of_dict:
+            for c in instance_of_dict[id]:
+                if c in classes:
+                    classes[c] = classes[c] + 1
+                else:
+                    classes[c] = 1
+                if c in subclass_of_dict:
+                    for subclass in subclass_of_dict[c]:
+                        if subclass in classes:
+                            classes[subclass] = classes[subclass] + 1
+                        else:
+                            classes[subclass] = 1
+        else:
+            if id in subclass_of_dict:
+                for c in subclass_of_dict[id]:
+                    if c in classes:
+                        classes[c] = classes[c] + 1
+                    else:
+                        classes[c] = 1
+                    if c in subclass_of_dict:
+                        for subclass in subclass_of_dict[c]:
+                            if subclass in classes:
+                                classes[subclass] = classes[subclass] + 1
+                            else:
+                                classes[subclass] = 1
+    sorted_classes = {k: v for k, v in sorted(classes.items(), reverse=True, key=lambda item: item[1])}
     return sorted_classes
 
 def get_most_common_classes(classes):
@@ -50,27 +58,59 @@ def read_config_file():
     config_file.close()
     return dictio_config
 
+def read_p31_p279_file(dictio_config):
+    id_p31_file = open(dictio_config["id_p31_path"], "rb")
+    id_p279_file = open(dictio_config["id_p279_path"], "rb")
+    dictio_id_p31 = pickle.load(id_p31_file)
+    dictio_id_p279 = pickle.load(id_p279_file)
+    id_p31_file.close()
+    id_p279_file.close()
+    return dictio_id_p31, dictio_id_p279
+
+def read_dataset_file(dictio_config):   
+    #parsing the wikidata datasets
+    dictio_wikidata_objects = {} #maps objects to given subject an property of complete and incomplete wikidata
+    wikidata_missing_tripels = open(dictio_config["wikidata_missing_tripel_path"], "r")
+    for line in wikidata_missing_tripels:
+        tripel = (line.replace("\n", "")).split(" ")
+        subj = str(tripel[0]).split('/')[-1].replace('>', "")
+        prop = str(tripel[1]).split('/')[-1].replace('>', "")
+        obj = str(tripel[2]).split('/')[-1].replace('>', "")
+        if prop not in dictio_wikidata_objects:
+            dictio_wikidata_objects[prop] = {}
+        else:
+            if subj not in dictio_wikidata_objects[prop]:
+                dictio_wikidata_objects[prop][subj] = {}
+                dictio_wikidata_objects[prop][subj] = []
+
+            dictio_wikidata_objects[prop][subj].append(obj)
+    wikidata_missing_tripels.close()
+    return dictio_wikidata_objects
+
 def main():
-    #dictio_config = read_config_file()
-    #dataset = open(dictio_config["wikidata_missing_tripel_path"])
-    dataset = open("../P1412_dictio_wikidata_objects.json", "r")
-    dictio_wikidata_objects = json.load(dataset)
-    dataset.close()
-    #props = ['P19', 'P20', 'P279', 'P37', 'P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101', 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412', 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P36', 'P740', 'P361']
-    props = ["P1412"]
+    dictio_config = read_config_file()
+    dictio_id_p31, dictio_id_p279 = read_p31_p279_file(dictio_config)
+    dictio_wikidata_objects = read_dataset_file(dictio_config)
+    data = {}
+    data["id_p31"] = dictio_id_p31
+    data["id_p279"] = dictio_id_p279
+    data["wikidata_objects"] = dictio_wikidata_objects
+    print("read all data files")
+    props = ['P19', 'P20', 'P279', 'P37', 'P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101', 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412', 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P36', 'P740', 'P361']
     dictio_classes = {}
     for p in props:
         try:
+            #tripel: (item, prop, value)
             items = []
             values = []
             subjects = dictio_wikidata_objects[p]
             for subj in subjects:
                 items.append(subj)
-                objects = dictio_wikidata_objects[p][subj]["random_incomplete"]
+                objects = dictio_wikidata_objects[p][subj]
                 for obj in objects:
                     values.append(obj)
-            item_classes = find_class(items)            
-            values_classes = find_class(values)
+            item_classes = find_class(items, data)            
+            values_classes = find_class(values, data)
             temp = {}
             temp["?PQ"] = get_most_common_classes(item_classes)
             temp["QP?"] = get_most_common_classes(values_classes)
@@ -79,7 +119,7 @@ def main():
             print(p)
             print(e)
             continue
-    #open a txt-file to save the data
+    #open a json-file to save the data
     print("open file...")
     if os.path.exists("dictio_prop_class_instances.json"):
         os.remove("dictio_prop_class_instances.json")
@@ -90,7 +130,7 @@ def main():
         json.dump(temp, file)
         file.write("\n")
     file.close()
-    print("...result written to txt :)")
+    print("...result written to json :)")
 
 if __name__ == '__main__':
     main()

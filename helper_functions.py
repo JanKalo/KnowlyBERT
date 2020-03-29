@@ -7,57 +7,29 @@ import signal
 import sys, traceback
 import timeit
 
-#TODO without virtuoso
-# Specifying the ODBC driver, server name, database, etc. directly
-cnxn_current = pyodbc.connect('DSN=MyVirtuoso;UID=dba;PWD=F4B656JXqBG')
-cnxn_current.setdecoding(pyodbc.SQL_CHAR, encoding='utf-8')
-cnxn_current.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
-# Create a cursor from the connection
-cursor_current = cnxn_current.cursor()
-    
-
 #function to find the classes of a given entity (i.e. item_id_url=http://www.wikidata.org/entity/Q567)
-def find_class(id):
-    classes = []
-    #finding instance
-    query = """SELECT ?instance 
-            WHERE {{
-                <http://www.wikidata.org/entity/{}> <http://www.wikidata.org/prop/direct/P31> ?instance
-            }}""".format(id)
-    cursor_current.execute("SPARQL "+query)
-    while True:
-        row = cursor_current.fetchone()
-        if not row:
-            break
-        actu = row.instance
-        classes.append(actu)
-    #finding superclass if no instances are found
-    if classes == []:
-        query = """SELECT ?supclass
-                WHERE {{
-                    <http://www.wikidata.org/entity/{}> <http://www.wikidata.org/prop/direct/P279> ?supclass
-                }}""".format(id)
-        cursor_current.execute("SPARQL "+query)
-        while True:
-            row = cursor_current.fetchone()
-            if not row:
-                break
-            actu = row.supclass
-            classes.append(actu)
-    #finding part if no instances and no superclasses are found
-    if classes == []:
-        query = """SELECT ?part
-                WHERE {{
-                    <http://www.wikidata.org/entity/{}> <http://www.wikidata.org/prop/direct/P361> ?part
-                }}""".format(id)
-        cursor_current.execute("SPARQL "+query)
-        while True:
-            row = cursor_current.fetchone()
-            if not row:
-                break
-            actu = row.part
-            classes.append(actu)
-    return classes
+def find_class(id, data):
+    instance_of_dict = data["id_p31"]
+    subclass_of_dict = data["id_p279"]
+    try:
+        if id in instance_of_dict:
+            classes = []
+            for c in instance_of_dict[id]:
+                classes.append(c)
+                for subclass in subclass_of_dict[c]:
+                    classes.append(subclass)
+            print(id, classes)
+            return classes
+        else:
+            classes = []
+            for c in subclass_of_dict[id]:
+                classes.append(c)
+                for subclass in subclass_of_dict[c]:
+                    classes.append(subclass)
+            print(id, classes)
+            return classes
+    except KeyError:
+        return "WARNING: No classes have been found, id: {}".format(id)
 
 #function to resolve a id (i.e. Q567) into label (i.e. Angela Merkel)
 def find_label(id, data):
@@ -66,7 +38,7 @@ def find_label(id, data):
     else:
         dictio_id_label = data["id_label"]
         if id in dictio_id_label:
-            return dictio_id_label[id]
+            return dictio_id_label[id][0]
         else:
             return "WARNING: No label have been found, id: {}".format(id)
 
@@ -131,19 +103,26 @@ def find_results_KG_incomplete(tripel, parameter, data):
         else:
             results_KG_incomplete[result] = label
     
-    with cursor_current:
-        for result in results_KG_incomplete:
-            classes = find_class(result)
-            if "WARNING" in str(classes):
-                errors.append(classes)
-            else:
-                for c in classes:
-                    if c not in expected_classes:
-                        expected_classes.append(c)
+    for result in results_KG_incomplete:
+        classes = find_class(result, data)
+        if "WARNING" in str(classes):
+            errors.append(classes)
+        else:
+            for c in classes:
+                if c not in expected_classes:
+                    expected_classes.append(c)
     return results_KG_incomplete, expected_classes, errors
+
+def is_personal_pronoun(label):
+    personal_pronouns = ["i", "you", "he", "she", "it", "we", "you", "they", "me", "you", "him", "her", "us", "them"]
+    if label.lower() in personal_pronouns:
+        return True
+    else:
+        return False
 
 def find_results_LM(result_LM, results_KG_complete, expected_classes, data):
     #return all possible results which fits to the classes of the KG results
+    print("find results LM")
     possible_results_LM = {}
     not_in_dictionary = {}         
     errors = []
@@ -158,18 +137,18 @@ def find_results_LM(result_LM, results_KG_complete, expected_classes, data):
                 status_possible_result_LM_label = "correct_label"
             else:
                 status_possible_result_LM_label = "incorrect_label"
-        
         #check if LM has a correct result, but the dictio is not complete
-        if label in data["label_id"]:
+        dictio_label_id = data["label_id"]
+        if not is_personal_pronoun(label) and label in dictio_label_id:
             for k in results_KG_complete:
                 if results_KG_complete[k] == label:
-                    if k not in data["label_id"][label]:
+                    if k not in dictio_label_id[label]:
                         not_in_dictionary[label] = "label exists, but ID {} missing".format(k)
-            #check if LM results fits to the classes of the KG results
+            #check if LM results fits to the expected classes of the query
             inserted = False
             possible_entities = []
-            for entity_id in data["label_id"][label]:
-                classes_LM = find_class(entity_id)
+            for entity_id in dictio_label_id[label]:
+                classes_LM = find_class(entity_id, data)
                 if "WARNING" in str(classes_LM):
                     errors.append(classes_LM)
                 else:
@@ -357,8 +336,8 @@ def string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimat
                 result_string = result_string + threshold_log + "\n"
                 result_string = result_string + "calculated threshold of confusion: " +  str(threshold) + "\n"
     result_string = result_string + "\nQUERY: {}".format(query_LM) + "\n"
-    result_string = result_string + "Result KG current:\n{}".format(results_KG_complete) + "\n"
-    result_string = result_string + "Result KG outdated/random:\n{}".format(results_KG_incomplete) + "\n"
+    result_string = result_string + "Result KG complete:\n{}".format(results_KG_complete) + "\n"
+    result_string = result_string + "Result KG incomplete:\n{}".format(results_KG_incomplete) + "\n"
     frist_20_possible_results_LM = {}
     count = 0
     for res in possible_results_LM:

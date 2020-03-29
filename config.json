@@ -2,9 +2,11 @@
 "wikidata_missing_tripel_path": "/home/kalo/conferences/iswc2020/data/missing_data.nt",
 "queries_path": "/home/kalo/conferences/iswc2020/data/queries",
 "lm_build_path_template": "/data/fichtel/lm_builds/model_<name>",
-"label_id_path": "wikidata/dictio_label_id_multi_token.json",
-"id_label_path": "wikidata/dictio_id_label_multi_token.json",
+"label_id_path": "/home/kalo/conferences/iswc2020/data//label2entity.json",
+"id_label_path": "/home/kalo/conferences/iswc2020/data//entity2label.json",
+"id_p31_path": "/home/kalo/conferences/iswc2020/data/entity_class.pickle",
+"id_p279_path": "/home/kalo/conferences/iswc2020/data/subclass_dict.pickle",
 "cardinality_estimation_path": "prob_distribution/prop_mu_sig.json",
 "template_path": "LM_sentence/prop_sentence.json",
-"prop_class_path": "wikidata/dictio_prop_class.json"}
+"prop_class_path": "wikidata/dictio_prop_class_instances.json"}
 

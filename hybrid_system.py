@@ -6,21 +6,15 @@ from time import sleep
 from multiprocessing import Lock, Pool
 import copy
 import timeit
-import json
+import simplejson as json
 import helper_functions
 import LAMA.templates.rank_with_templates as rank_with_templates
-import dill
+import build_language_model as lm
 
 class KeyboardInterruptError(Exception): pass
 
 #global variables
 lock = None
-lm = None
-bool_whole_sentence = None
-dictio_examples_incomplete_results = None
-dictio_whole_sentence = None
-dictio_prop_classes = None
-always_prop_classes = None
 
 #execute the queries at KG and LM
 def execute_query(tripel, parameter, data):
@@ -33,13 +27,13 @@ def execute_query(tripel, parameter, data):
         results_KG_complete, errors_KG_complete = helper_functions.find_results_KG_complete(tripel, data)
         for error in errors_KG_complete:
             errors.append(error)
-        
+
         #results of incomplete Knowledge Graph
         results_KG_incomplete, expected_classes, errors_KG_incomplete = helper_functions.find_results_KG_incomplete(tripel, parameter, data)
         number_of_KG_results_incomplete = len(results_KG_incomplete)
         for error in errors_KG_incomplete:
             errors.append(error)
-        print(tripel, results_KG_complete, results_KG_incomplete)
+        #print("KG result complete", results_KG_complete, "KG result incomplete", results_KG_incomplete)
         #Language Model
         label_subj = helper_functions.find_label(tripel[0], data)
         label_obj = helper_functions.find_label(tripel[2], data)
@@ -56,7 +50,7 @@ def execute_query(tripel, parameter, data):
                     expected_classes = data["prop_classes"][tripel[1]]["QP?"]
                 else:
                     raise Exception("Tripel is in a wrong format {}".format(tripel))
-            
+            #print("expected classes ", expected_classes)
             labels = set(data["label_id"].keys())
             print("START LAMA")
             result_LM = rank_with_templates.get_ranking(label_subj, tripel[1], label_obj, data["lm_build"], labels, data["prop_template"], parameter["ts"])
@@ -106,11 +100,9 @@ def execute(dictio_config, parameter, data):
         line = queries_file.readline().replace("\n", "")
     print("parsed example file")
 
-    #load lm TODO create lm build file
+    #build language model
     path = dictio_config["lm_build_path_template"].replace("<name>", parameter["lm"])
-    with open(path, 'rb') as lm_build_file:
-        data["lm_build"] = dill.load(lm_build_file)
-     
+    data["lm_build"] = lm.build(path)
 
     #pool = None
     results_all_processes = []
@@ -124,12 +116,15 @@ def execute(dictio_config, parameter, data):
         #output_first_try = [res.get() for res in results]
         #pool.close()
         #pool.join()
+        #queries = set()
+        #queries.add(("Q4174681", "P1412", "?"))
         output_first_try = []
         count = 0
         for (s, p, o) in queries:
-            if count == 1:
+            if count == 10:
                 break
             tripel = [s, p, o]
+            print(tripel)
             result = execute_query(tripel, parameter, data)
             output_first_try.append(result)
             count = count + 1

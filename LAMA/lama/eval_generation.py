@@ -26,12 +26,12 @@ def main(args):
     models = {}
     for lm in args.models_names:
         if os.path.exists("/data/fichtel/lm_builds/model_{}".format(lm)):
-            with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as config_dictionary_file:
-                models = dill.load(config_dictionary_file)
+            with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as lm_build_file:
+                models[lm] = dill.load(lm_build_file)
         else:
             models[lm] = build_model_by_name(lm, args)
-            with open("/data/fichtel/lm_builds/model_{}".format(lm), 'wb') as config_dictionary_file:
-                dill.dump(models, config_dictionary_file)
+            with open("/data/fichtel/lm_builds/model_{}".format(lm), 'wb') as lm_build_file:
+                dill.dump(models[lm], lm_build_file)
     
     vocab_subset = None
     if args.common_vocab_filename is not None:
