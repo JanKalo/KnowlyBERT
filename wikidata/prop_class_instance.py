@@ -121,9 +121,9 @@ def main():
             continue
     #open a json-file to save the data
     print("open file...")
-    if os.path.exists("dictio_prop_class_instances.json"):
-        os.remove("dictio_prop_class_instances.json")
-    file = open("dictio_prop_class_instances.json", "w")
+    if os.path.exists("/home/fichtel/conferences/iswc2020/data/dictio_prop_class_instances.json"):
+        os.remove("/home/fichtel/conferences/iswc2020/data/dictio_prop_class_instances.json")
+    file = open("/home/fichtel/conferences/iswc2020/data/dictio_prop_class_instances.json", "w")
     for prop in dictio_classes:
         temp = {}
         temp[prop] = dictio_classes[prop]

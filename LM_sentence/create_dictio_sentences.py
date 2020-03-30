@@ -5,9 +5,9 @@ import pyodbc
 
 def main(file_path):
     #open a json-file to save the data
-    if os.path.exists("prop_sentence.json"):
-        os.remove("prop_sentence.json")
-    file_dictio = open("prop_sentence.json", "w")
+    if os.path.exists("/home/fichtel/conferences/iswc2020/data/prop_sentence_LAMA.json"):
+        os.remove("/home/fichtel/conferences/iswc2020/data/prop_sentence_LAMA.json")
+    file_dictio = open("/home/fichtel/conferences/iswc2020/data/prop_sentence_LAMA.json", "w")
     dictio_prop_sentence = {}
 
     file_relations = open("relations.jsonl")

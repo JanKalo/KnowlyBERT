@@ -18,7 +18,7 @@ def find_class(id, data):
                 classes.append(c)
                 for subclass in subclass_of_dict[c]:
                     classes.append(subclass)
-            print(id, classes)
+            #print(id, classes)
             return classes
         else:
             classes = []
@@ -26,7 +26,7 @@ def find_class(id, data):
                 classes.append(c)
                 for subclass in subclass_of_dict[c]:
                     classes.append(subclass)
-            print(id, classes)
+            #print(id, classes)
             return classes
     except KeyError:
         return "WARNING: No classes have been found, id: {}".format(id)

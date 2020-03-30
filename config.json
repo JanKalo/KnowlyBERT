@@ -7,6 +7,5 @@
 "id_p31_path": "/home/kalo/conferences/iswc2020/data/entity_class.pickle",
 "id_p279_path": "/home/kalo/conferences/iswc2020/data/subclass_dict.pickle",
 "cardinality_estimation_path": "prob_distribution/prop_mu_sig.json",
-"template_path": "LM_sentence/prop_sentence.json",
-"prop_class_path": "wikidata/dictio_prop_class_instances.json"}
-
+"template_path": "/home/fichtel/conferences/iswc2020/data/prop_sentence_LAMA.json",
+"prop_class_path": "/home/fichtel/conferences/iswc2020/data/dictio_prop_class_instances.json"}
