@@ -13,6 +13,7 @@ import itertools
 
 
 def join_result_lists(results_list):
+    forbidden_results = set(["i", "you", "he", "she", "it", "we", "you", "they", "me", "you", "him", "her", "us", "them"])
     #here I need some disambiguation tool
     joined_results = []
     for result in results_list:
@@ -20,7 +21,9 @@ def join_result_lists(results_list):
         for list in result:
             i = []
             for dict in list['topk']:
-                i.append((dict['token_word_form'], dict['log_prob']))
+                label = dict['token_word_form']
+                if label.lower() not in forbidden_results and label.lower().islower():
+                    i.append((dict['token_word_form'], dict['log_prob']))
             intermediate_topk.append(i)
         a = itertools.product(*intermediate_topk)
 
@@ -42,6 +45,7 @@ def join_result_lists(results_list):
 
 def find_entities(label_results, entity_labels):
     entity_results = []
+
     for label, value in label_results:
         if label in entity_labels:
             entity_results.append((label, value))
@@ -49,6 +53,27 @@ def find_entities(label_results, entity_labels):
 
 
 
+
+
+def entity_label_tree(entity_labels):
+    entity_label_tree = {}
+    for label in entity_labels:
+        label_1, _ = label.split()
+        entity_label_tree[label_1] = {}
+
+    for label in entity_labels:
+        try:
+            label_1, label_2, _ = label.split()
+            entity_label_tree[label_1][label_2] = None
+        except ValueError:
+            continue
+
+    for label in entity_labels:
+        try:
+            label_1, label_2, label_3 = label.split()
+            entity_label_tree[label_1][label_2] = label_3
+        except ValueError:
+            continue
 
 def get_results(model, sentence):
 
@@ -86,7 +111,8 @@ if __name__ == '__main__':
 
     #read all wikidata labels
 
-    entity_labels = {}
+    label2entity_file = open('/home/kalo/conferences/iswc2020/data/label2entity.json', 'r')
+    entity_labels = json.load(label2entity_file)
 
     models = {}
     lm = "bert"
@@ -100,4 +126,4 @@ if __name__ == '__main__':
         sent = "[MASK] is the president of the United States."
         result_list = get_results(model, sent)
         label_results = join_result_lists(result_list)
-        find_entities(label_results, entity_labels)
+        print(find_entities(label_results, entity_labels))
