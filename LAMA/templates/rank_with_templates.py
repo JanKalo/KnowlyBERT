@@ -54,26 +54,26 @@ def get_entities(relation):
 #TODO: Check whether this method is leading to good results
 #TODO: Maybe include confu
 def merge_rankings(results_per_template):
-
-
+    forbidden_results = set(["i", "you", "he", "she", "it", "we", "you", "they", "me", "you", "him", "her", "us", "them"])
     intermediate_rank = {}
 
     for results in results_per_template:
         label_tuple, template_confidence = results
         for label, confusion in label_tuple:
-            if label in intermediate_rank:
-                #if the new confusion value is better, override the old one
-                if intermediate_rank[label] < confusion:
+            if label.lower() not in forbidden_results and label.lower().islower():
+                if label in intermediate_rank:
+                    #if the new confusion value is better, override the old one
+                    if intermediate_rank[label] < confusion:
+                        intermediate_rank[label] = confusion
+                else:
                     intermediate_rank[label] = confusion
-            else:
-                intermediate_rank[label] = confusion
-    
+
     return [(k, v) for k, v in intermediate_rank.items()]
 
 def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templates):
 
     merged_ranking = []
-    
+
     #get rankings for property and sort by confidence ranking
     templates = templatesDictionary[r]
     #get results for each template
@@ -97,7 +97,7 @@ import os
 if __name__ == '__main__':
 
     lm = "bert"
-    prop = "P36"
+    prop = "P1412"
     entity = "Q183"
     if os.path.exists("/data/fichtel/lm_builds/model_{}".format(lm)):
         with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as config_dictionary_file:
@@ -110,5 +110,5 @@ if __name__ == '__main__':
             template = readTemplates()
 
             # start ranking
-            rank = get_ranking(entity2Labels["http://www.wikidata.org/entity/{}".format(entity)],prop,"?", bert, label2Entities, template)
+            rank = get_ranking(entity2Labels["http://www.wikidata.org/entity/{}".format(entity)],prop,"?", bert, label2Entities, template, 10)
             print(rank)
