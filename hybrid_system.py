@@ -101,8 +101,7 @@ def execute(dictio_config, parameter, data):
     print("parsed example file")
 
     #build language model
-    path = dictio_config["lm_build_path_template"].replace("<name>", parameter["lm"])
-    data["lm_build"] = lm.build(path)
+    data["lm_build"] = lm.build(parameter["lm"])
 
     #pool = None
     results_all_processes = []

@@ -122,7 +122,6 @@ def is_personal_pronoun(label):
 
 def find_results_LM(result_LM, results_KG_complete, expected_classes, data):
     #return all possible results which fits to the classes of the KG results
-    print("find results LM")
     possible_results_LM = {}
     not_in_dictionary = {}         
     errors = []
