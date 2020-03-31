@@ -365,7 +365,7 @@ def write_into_files(i, folder, mc, cep, tmc, tmp, file_evaluation, hybrid_outpu
         file_missing.close()
     if dictio_prop_label_possible_entities != {}:
         file_dictio_prop_label_possible_entities = open("evaluation/{}/dictio_prop_label_possible_entities".format(folder), "w")
-        file_dictio_prop_label_possible_entities.write("Labels which has more than one possible entity id for each property\n")
+        file_dictio_prop_label_possible_entities.write("Labels with the possible entities for each property\n")
         for prop in dictio_prop_label_possible_entities:
             string_prop_ids = "{}:\n{}\n\n".format(prop, dictio_prop_label_possible_entities[prop])
             file_dictio_prop_label_possible_entities.write(string_prop_ids)
@@ -436,6 +436,8 @@ def write_into_files(i, folder, mc, cep, tmc, tmp, file_evaluation, hybrid_outpu
 
 
 def handeling_output(parameter, hybrid_output, list_hybrid_log, list_errors, string_random_outdated):
+    if not os.path.exists("evaluation/"):
+        os.mkdir("evaluation")
     if hybrid_output != []:
         if len(parameter["mc"]) == 1 and len(parameter["cep"]) == 1 and len(parameter["tmc"]) == 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
@@ -592,55 +594,22 @@ def read_dataset_files(dictio_config):
         #file_subjects.close()
     return dictio_wikidata_subjects, dictio_wikidata_objects
 
-
-
 def read_label_id_file(dictio_config):
-    #TODO only for debugging
-    if os.path.exists("wikidata/dictio_label_id.json"):
-        dictio_label_id = {}
-        label_id_file = open("wikidata/dictio_label_id.json", "r")
-        dictio_label_id = json.load(label_id_file)
-        label_id_file.close()
-    else:
-        #parsing the label-ID-dictionary
-        dictio_label_id = {}
-        label_id_file = open(dictio_config["label_id_path"], "r")
-        dictio = json.load(label_id_file)
-        label_id_file.close()
-        for label in dictio:
-            dictio_label_id[label] = []
-            ids = dictio[label]
-            for ID in ids:
-                dictio_label_id[label].append(str(ID.split('/')[-1].replace('>', "")))
-
-        label_id_file = open("wikidata/dictio_label_id.json", "w")
-        json.dump(dictio_label_id, label_id_file)
-        label_id_file.close()
+    #parsing the label-ID-dictionary
+    dictio_label_id = {}
+    #label_id_file = open(dictio_config["label_id_path"], "r")
+    label_id_file = open(dictio_config["label_id_rdfLabel_path"], "r")
+    dictio_label_id = json.load(label_id_file)
+    label_id_file.close()
     return dictio_label_id
 
 def read_id_label_file(dictio_config):
-    #TODO only for debugging
-    if os.path.exists("wikidata/dictio_id_label.json"):
-        dictio_id_label = {}
-        id_label_file = open("wikidata/dictio_id_label.json", "r")
-        dictio_id_label = json.load(id_label_file)
-        id_label_file.close()
-    else:
-        #parsing the ID-label-dictionary
-        dictio_id_label = {}
-        id_label_file = open(dictio_config["id_label_path"], "r")
-        dictio = json.load(id_label_file)
-        id_label_file.close()
-        for ID_url in dictio:
-            ID = str(ID_url.split('/')[-1].replace('>', ""))
-            dictio_id_label[ID] = []
-            labels = dictio[ID_url]
-            for label in labels:
-                dictio_id_label[ID].append(label)
-
-        id_label_file = open("wikidata/dictio_id_label.json", "w")
-        json.dump(dictio_id_label, id_label_file)
-        id_label_file.close()
+    #parsing the ID-label-dictionary
+    dictio_id_label = {}
+    #id_label_file = open(dictio_config["id_label_path"], "r")
+    id_label_file = open(dictio_config["id_label_rdfLabel_path"], "r")
+    dictio_id_label = json.load(id_label_file)
+    id_label_file.close()
     return dictio_id_label
 
 def read_p31_p279_file(dictio_config):
@@ -684,6 +653,24 @@ def read_prop_classes_file(dictio_config):
     file_prop_class.close()
     return dictio_prop_classes
 
+def read_entity_popularity_file(dictio_config):
+    #read json file for entity popularity
+    dictio_entity_popularity = {}
+    file_entity_popularity = open(dictio_config["entity_popularity_path"], "r")
+    dictio_entity_popularity = json.load(file_entity_popularity)
+    file_entity_popularity.close()
+    return dictio_entity_popularity
+
+def make_trie(words):
+    _end = '_end_'
+    root = dict()
+    for word in words:
+        current_dict = root
+        for token in word.split():
+            current_dict = current_dict.setdefault(token, {})
+        current_dict[_end] = _end
+    return root
+
 if __name__ == '__main__':
     dictio_config = read_config_file()
     dictio_wikidata_subjects, dictio_wikidata_objects = read_dataset_files(dictio_config)
@@ -693,6 +680,7 @@ if __name__ == '__main__':
     #dictio_prop_probdistribution = read_cardinality_estimation_file(dictio_config)
     dictio_prop_templates = read_template_file(dictio_config)
     dictio_prop_classes = read_prop_classes_file(dictio_config)
+    dictio_entity_popularity = read_entity_popularity_file(dictio_config)
 
     data = {}
     data["config"] = dictio_config
@@ -700,11 +688,13 @@ if __name__ == '__main__':
     data["wikidata_objects"] = dictio_wikidata_objects
     data["label_id"] = dictio_label_id
     data["id_label"] = dictio_id_label
+    data["trie"] = make_trie(set(data["label_id"].keys()))
     data["id_p31"] = dictio_id_p31
     data["id_p279"] = dictio_id_p279
     #data["prop_probdistribution"] = dictio_prop_probdistribution
     data["prop_template"] = dictio_prop_templates
     data["prop_classes"] = dictio_prop_classes
+    data["entity_popularity"] = dictio_entity_popularity
     print("read all data files")
 
     evaluations = []
@@ -715,11 +705,11 @@ if __name__ == '__main__':
     #mr: hardcoded max results which LM should add
     #ces: threshold for sampling size at cardinality estimation --> not activated: -1
     #cep: threshold for percentage at cardinality estimation --> not activated: -1
-    #tmc: threshold for confusion at threshold calculation for confusion --> not activated: 0
-    #tmn: threshold for number of results at threshold calculation for confusion --> not activated: 0
-    #tmp: threshold for percentage at threshold calculation for confusion --> not activated: 0
+    #tmc: threshold for probability at threshold calculation for probability --> not activated: 0
+    #tmn: threshold for number of results at threshold calculation for probability --> not activated: 0
+    #tmp: threshold for percentage at threshold calculation for probability --> not activated: 0
     #ts: value how many templates should be used
-    #apc: value wheather the proptery classes should always be used
+    #apc: value wheather the property classes should always be used
 
     #evaluation test
     parameter = {}
@@ -734,7 +724,7 @@ if __name__ == '__main__':
     parameter["tmn"] = 10
     parameter["tmp"] = [0.5]
     parameter["ts"] = 1
-    parameter["apc"] = False
+    parameter["apc"] = True
     if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -743,8 +733,7 @@ if __name__ == '__main__':
     runtime = []
     for parameter in evaluations:
         start = timeit.default_timer()
-        hybrid_output, list_hybrid_log, list_errors = hybrid_system.execute(dictio_config, parameter, data)
-        print(hybrid_output)
+        hybrid_output, list_hybrid_log, list_errors = hybrid_system.execute(parameter, data)
         stop = timeit.default_timer()
         handeling_output(parameter, hybrid_output, list_hybrid_log, list_errors, parameter["wikidata_incomplete"].split("_")[0])
         print('Time: {}min'.format((stop - start)/60))

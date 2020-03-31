@@ -113,13 +113,6 @@ def find_results_KG_incomplete(tripel, parameter, data):
                     expected_classes.append(c)
     return results_KG_incomplete, expected_classes, errors
 
-def is_personal_pronoun(label):
-    personal_pronouns = ["i", "you", "he", "she", "it", "we", "you", "they", "me", "you", "him", "her", "us", "them"]
-    if label.lower() in personal_pronouns:
-        return True
-    else:
-        return False
-
 def find_results_LM(result_LM, results_KG_complete, expected_classes, data):
     #return all possible results which fits to the classes of the KG results
     possible_results_LM = {}
@@ -138,13 +131,13 @@ def find_results_LM(result_LM, results_KG_complete, expected_classes, data):
                 status_possible_result_LM_label = "incorrect_label"
         #check if LM has a correct result, but the dictio is not complete
         dictio_label_id = data["label_id"]
-        if not is_personal_pronoun(label) and label in dictio_label_id:
-            for k in results_KG_complete:
-                if results_KG_complete[k] == label:
-                    if k not in dictio_label_id[label]:
-                        not_in_dictionary[label] = "label exists, but ID {} missing".format(k)
+        if label in dictio_label_id:
+            #for k in results_KG_complete:
+            #    if results_KG_complete[k] == label:
+            #        if k not in dictio_label_id[label]:
+            #            not_in_dictionary[label] = "label exists, but ID {} missing".format(k)
+            
             #check if LM results fits to the expected classes of the query
-            inserted = False
             possible_entities = []
             for entity_id in dictio_label_id[label]:
                 classes_LM = find_class(entity_id, data)
@@ -153,19 +146,29 @@ def find_results_LM(result_LM, results_KG_complete, expected_classes, data):
                 else:
                     for c in classes_LM:
                         if c in expected_classes:
-                            if not inserted:
-                                possible_results_LM[entity_id] = [label, probability]
-                                possible_entities.append(entity_id)
-                                inserted = True
-                            else:
-                                possible_entities.append(entity_id)
+                            possible_entities.append(entity_id)
                             break
-            if len(possible_entities) > 1:
-                dictio_label_possible_entities[label] = possible_entities
-        else:
-            for k in results_KG_complete:
-                if results_KG_complete[k] == label:
-                    not_in_dictionary[label] = "label complete missing"
+            #check the popularity of the possible entities of the actu label
+            max_popularity = -1
+            chosen_entity = None
+            dictio_entity_popularity = {}
+            for entity in possible_entities:
+                if entity in data["entity_popularity"]:
+                    popularity = data["entity_popularity"][entity]
+                else:
+                    popularity = 0
+                if popularity > max_popularity:
+                    max_popularity = popularity
+                    chosen_entity = entity
+                dictio_entity_popularity[entity] = popularity
+            if dictio_entity_popularity:
+                dictio_label_possible_entities[label] = dictio_entity_popularity
+            if max_popularity > 0:
+                possible_results_LM[chosen_entity] = [label, probability]
+        #else:
+        #    for k in results_KG_complete:
+        #        if results_KG_complete[k] == label:
+        #            not_in_dictionary[label] = "label complete missing"
     
     if possible_results_LM == {}:
         status_possible_result_LM_ID = "non"
@@ -335,25 +338,33 @@ def string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimat
                 result_string = result_string + threshold_log + "\n"
                 result_string = result_string + "calculated threshold of confusion: " +  str(threshold) + "\n"
     result_string = result_string + "\nQUERY: {}".format(query_LM) + "\n"
-    result_string = result_string + "Result KG complete:\n{}".format(results_KG_complete) + "\n"
-    result_string = result_string + "Result KG incomplete:\n{}".format(results_KG_incomplete) + "\n"
-    frist_20_possible_results_LM = {}
+    if len(results_KG_complete) <= 30:
+        result_string = result_string + "Result KG complete:\n{}".format(results_KG_complete) + "\n"
+        result_string = result_string + "Result KG incomplete:\n{}".format(results_KG_incomplete) + "\n"
+    else:
+        missing_entities = {}
+        for result in results_KG_complete:
+            if result not in results_KG_incomplete:
+                missing_entities[result] = results_KG_complete[result]
+        result_string = result_string + "Missing entities in result KG incomplete:\n{}".format(missing_entities) + "\n"
+        
+    frist_30_possible_results_LM = {}
     count = 0
     for res in possible_results_LM:
-        if count == 20:
+        if count == 30:
             break
         else:
-            frist_20_possible_results_LM[res] = possible_results_LM[res]
+            frist_30_possible_results_LM[res] = possible_results_LM[res]
             count = count + 1
     if results_LM_estimation == 0:
         result_string = result_string + "Result LM:\n{}".format(results_LM) + "\n"
-        result_string = result_string + "Result LM possible:\n{}".format(frist_20_possible_results_LM) + "\n"
+        result_string = result_string + "Result LM possible:\n{}".format(frist_30_possible_results_LM) + "\n"
     elif results_LM_estimation == -1:
         result_string = result_string + "Result LM estimation: sampling to small --> fallback to hard coded max_results\n{}".format(results_LM) +"\n"
-        result_string = result_string + "Result LM possible:\n{}".format(frist_20_possible_results_LM) + "\n"
+        result_string = result_string + "Result LM possible:\n{}".format(frist_30_possible_results_LM) + "\n"
     else:
         result_string = result_string + "Result LM estimation:\n{}".format(results_LM_estimation) + "\n"
-        result_string = result_string + "Result LM possible:\n{}".format(frist_20_possible_results_LM) + "\n"
+        result_string = result_string + "Result LM possible:\n{}".format(frist_30_possible_results_LM) + "\n"
     result_string = result_string + "\n"
     return result_string
 

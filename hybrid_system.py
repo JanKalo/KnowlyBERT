@@ -50,10 +50,9 @@ def execute_query(tripel, parameter, data):
                     expected_classes = data["prop_classes"][tripel[1]]["QP?"]
                 else:
                     raise Exception("Tripel is in a wrong format {}".format(tripel))
-            #print("expected classes ", expected_classes)
-            labels = set(data["label_id"].keys())
+            print("expected classes ", expected_classes)
             print("START LAMA")
-            result_LM = rank_with_templates.get_ranking(label_subj, tripel[1], label_obj, data["lm_build"], labels, data["prop_template"], parameter["ts"])
+            result_LM = rank_with_templates.get_ranking(label_subj, tripel[1], label_obj, data["lm_build"], data["trie"], data["prop_template"], parameter["ts"])
             possible_results_LM, not_in_dictionary, errors_LM, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID = helper_functions.find_results_LM(result_LM, results_KG_complete, expected_classes, data)
             for error in errors_LM:
                 errors.append(error)
@@ -85,7 +84,7 @@ def init(l):
     lock = l
 
 #execute the hybrid system
-def execute(dictio_config, parameter, data):
+def execute(parameter, data):
     #read example file for queries
     queries_file = open(parameter["queries_path"], "r")
     queries = set()
@@ -116,11 +115,11 @@ def execute(dictio_config, parameter, data):
         #pool.close()
         #pool.join()
         #queries = set()
-        #queries.add(("Q4174681", "P1412", "?"))
+        #queries.add(("?", "P1412", "Q7026"))
         output_first_try = []
         count = 0
         for (s, p, o) in queries:
-            if count == 10:
+            if count == 200:
                 break
             tripel = [s, p, o]
             print(tripel)
