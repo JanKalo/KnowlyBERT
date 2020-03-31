@@ -256,7 +256,7 @@ def rank_sentences_1(model, index_entry, entityPairs, entityLabels):
 import multi_token as mt
 
 #Rank entities with regard to second metric of paper by
-def rank_sentences_2(model, index_entry, entityPairs, entity2Labels, label2Entities):
+def rank_sentences_2(model, index_entry, entityPairs, entity2Labels, label2Entities, subjectLabels, objectLabels):
 
     orig_sentence = index_entry['sentence']
     print(orig_sentence)
@@ -283,13 +283,7 @@ def rank_sentences_2(model, index_entry, entityPairs, entity2Labels, label2Entit
         results1.append(result)
     for result, value in multi_token.get_multi_token_results(sentence_2, model, label2Entities):
         results2.append(result)
-    #compute the overlap with correct labels
-    s_labels = set()
-    o_labels = set()
 
-    for (s,o) in entityPairs:
-        s_labels.add(entity2Labels[s][0])
-        o_labels.add(entity2Labels[o][0])
 
     overlap_s = len(s_labels.intersection(results1))
     overlap_o = len(o_labels.intersection(results2))
@@ -362,7 +356,9 @@ if __name__ == '__main__':
     if os.path.exists("/data/fichtel/lm_builds/model_{}".format(lm)):
         with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as lm_build_file:
             models[lm] = dill.load(lm_build_file)
-
+    label2Entities, entity2Labels = get_entity_labels_files('/home/kalo/conferences/iswc2020/data/label2entity.json','/home/kalo/conferences/iswc2020/data/entity2label.json')
+    entity_trie = make_trie(label2Entities.keys())
+    print("read entity dictionaries and built trie")
     props = ['P19', 'P20', 'P279', 'P37', 'P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101', 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412', 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P36', 'P740', 'P361']
     #props = ['P1412']
     for prop in props:
@@ -377,10 +373,10 @@ if __name__ == '__main__':
                 entities = get_entitis_file('/home/kalo/conferences/iswc2020/data/missing_data.nt')
 
 
-                label2Entities, entity2Labels = get_entity_labels_files('/home/kalo/conferences/iswc2020/data/label2entity.json', '/home/kalo/conferences/iswc2020/data/entity2label.json')
+
                 print('Found {} entity pairs for the relation.'.format(len(entities[prop])))
                 index = index_sentences("/home/kalo/TREx", entities[prop], "http://www.wikidata.org/prop/direct/{}".format(prop), entity2Labels)
-                entity_trie = make_trie(label2Entities.keys())
+                print("found template sentences")
                 # with open("data/{}_data".format(prop), 'wb') as prop_data_file:
                 prop_data = {}
                 prop_data["ent"] = entities[prop]
@@ -392,12 +388,18 @@ if __name__ == '__main__':
 
             results = {}
             filtered_index = find_similar_sentences(prop_data["index"], prop_data["ent2Label"])
+            # compute the overlap with correct labels
+            s_labels = set()
+            o_labels = set()
+
+            for (s, o) in prop_data["ent"]:
+                s_labels.add(entity2Labels[s][0])
+                o_labels.add(entity2Labels[o][0])
 
 
-
-
+            print("starting to rank sentences")
             for sentence in filtered_index:
-                score = rank_sentences_2(model, sentence, prop_data["ent"] , prop_data["ent2Label"], prop_data["trie"])
+                score = rank_sentences_2(model, sentence, prop_data["ent"] , prop_data["ent2Label"], prop_data["trie"], s_labels, o_labels)
                 orig_sentence = sentence["sentence"]
                 if sentence['e1'][0] < sentence['e2'][0]:
                     subject_object_template = orig_sentence[:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:]
