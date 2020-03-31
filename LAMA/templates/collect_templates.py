@@ -81,6 +81,8 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
                             for e2 in sent_ents:
                                 if e1 != e2:
                                     try:
+                                        e1['uri'] = e1['uri'].replace("http://www.wikidata.org/entity/", "")
+                                        e2['uri'] = e2['uri'].replace("http://www.wikidata.org/entity/", "")
                                         if (e1['uri'],e2['uri']) in entityPairs:
                                             e1_too_short_surfaceform = False
 
@@ -152,6 +154,8 @@ def get_entitis_file(input_path):
             s,p,o = line.split("> <")
             s = s.replace("<", "")
             o = o.replace("> .\n","")
+            s = s.replace("http://www.wikidata.org/entity/", "")
+            o = o.replace("http://www.wikidata.org/entity/", "")
             p = p.replace("http://www.wikidata.org/prop/direct/","")
             if p in relation_dict:
                 relation_dict[p].add((s,o))
@@ -341,6 +345,17 @@ def find_similar_sentences(index, entity2Labels):
     #print(filtered_index)
     return filtered_index
 
+_end = '_end_'
+def make_trie(words):
+    root = dict()
+    for word in words:
+        current_dict = root
+        for token in word.split():
+            current_dict = current_dict.setdefault(token, {})
+        current_dict[_end] = _end
+    return root
+
+
 if __name__ == '__main__':
     lm = "bert"
     models = {}
@@ -365,13 +380,14 @@ if __name__ == '__main__':
                 label2Entities, entity2Labels = get_entity_labels_files('/home/kalo/conferences/iswc2020/data/label2entity.json', '/home/kalo/conferences/iswc2020/data/entity2label.json')
                 print('Found {} entity pairs for the relation.'.format(len(entities[prop])))
                 index = index_sentences("/home/kalo/TREx", entities[prop], "http://www.wikidata.org/prop/direct/{}".format(prop), entity2Labels)
-
+                entity_trie = make_trie(label2Entities.keys())
                 # with open("data/{}_data".format(prop), 'wb') as prop_data_file:
                 prop_data = {}
                 prop_data["ent"] = entities[prop]
                 prop_data["ent2Label"] = entity2Labels
                 prop_data["label2ent"] = label2Entities
                 prop_data["index"] = index
+                prop_data['trie'] = entity_trie
                 #     dill.dump(prop_data, prop_data_file)
 
             results = {}
@@ -381,7 +397,7 @@ if __name__ == '__main__':
 
 
             for sentence in filtered_index:
-                score = rank_sentences_2(model, sentence, prop_data["ent"] , prop_data["ent2Label"], prop_data["label2ent"])
+                score = rank_sentences_2(model, sentence, prop_data["ent"] , prop_data["ent2Label"], prop_data["trie"])
                 orig_sentence = sentence["sentence"]
                 if sentence['e1'][0] < sentence['e2'][0]:
                     subject_object_template = orig_sentence[:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:]
@@ -392,7 +408,7 @@ if __name__ == '__main__':
             sorted_results = {k: v for k, v in sorted(results.items(), reverse=True, key=lambda item: item[1])}
 
             if os.path.exists("templates.json"):
-                with open("templates.json", "r") as prop_templates_file:
+                with open("templates.json", "r", encoding="utf8") as prop_templates_file:
                     prop_templates = json.load(prop_templates_file)
                     prop_templates_file.close()
                     os.remove("templates.json")

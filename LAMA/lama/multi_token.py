@@ -12,37 +12,62 @@ import dill
 import itertools
 
 
-def join_result_lists(results_list):
+
+def join_result_lists(results_list, trie):
+    #remove pronouns from result list
     forbidden_results = set(["i", "you", "he", "she", "it", "we", "you", "they", "me", "you", "him", "her", "us", "them"])
-    #here I need some disambiguation tool
+
+
     joined_results = []
+    #iterate over all MASK outputs
     for result in results_list:
-        intermediate_topk = []
+        lists = []
         for list in result:
             i = []
+            #list topk contains the top 100 list of words and there confidence
             for dict in list['topk']:
                 label = dict['token_word_form']
+                #we exclude pronouns & labels need to consist of at least one letter
                 if label.lower() not in forbidden_results and label.lower().islower():
                     i.append((dict['token_word_form'], dict['log_prob']))
-            intermediate_topk.append(i)
-        a = itertools.product(*intermediate_topk)
+            lists.append(i)
 
-        #lets join the pairs to strings now and average the confusion values
-        for multi_token_tuple in a:
-            multi_token_string = ""
-            multi_token_value = 0
-            multi_token_counter = 0.0
-            for token in multi_token_tuple:
-                multi_token_counter += 1.0
-                multi_token_string += token[0]
-                multi_token_string += " "
-                multi_token_value += token[1]
-            multi_token_value = (multi_token_value/multi_token_counter)
-            joined_results.append((multi_token_string.strip(), multi_token_value))
+        if len(lists) == 1:
+            for token, value in lists[0]:
+                if in_trie(trie, token):
+                    joined_results.append((token, value))
+
+        else:
+            currentTokensToMatch = []
+            for tok, value in lists[0]:
+                # get the nodes from the first level
+                if get_next_tokens(trie, tok):
+                    currentTokensToMatch.append((tok, value))
+
+            for i in range(1, len(lists)):
+                matching_partners = lists[i]
+
+                nextTokensToMatch = []
+                while currentTokensToMatch:
+                    last_token, last_value = currentTokensToMatch.pop()
+
+                    for next_token, next_value in matching_partners:
+                        joined_token = last_token + " " + next_token
+                        if get_next_tokens(trie, joined_token):
+                            average_confidence = (last_value + next_value) / 2
+                            nextTokensToMatch.append((joined_token, average_confidence))
+                            if in_trie(trie, joined_token):
+                                joined_results.append((joined_token, average_confidence))
+                currentTokensToMatch = nextTokensToMatch
+
 
 
     return joined_results
 
+
+
+
+#should not be needed anymore
 def find_entities(label_results, entity_labels):
     entity_results = []
 
@@ -52,28 +77,32 @@ def find_entities(label_results, entity_labels):
     return entity_results
 
 
+_end = '_end_'
+def make_trie(words):
+    root = dict()
+    for word in words:
+        current_dict = root
+        for token in word.split():
+            current_dict = current_dict.setdefault(token, {})
+        current_dict[_end] = _end
+    return root
 
+def in_trie(trie, word):
+    current_dict = trie
+    for letter in word.split():
+        if letter not in current_dict:
+            return False
+        current_dict = current_dict[letter]
+    return _end in current_dict
 
+def get_next_tokens(trie, word):
+    current_dict = trie
+    for token in word.split():
+        if token not in current_dict:
+            return False
+        current_dict = current_dict[token]
+    return current_dict.keys()
 
-def entity_label_tree(entity_labels):
-    entity_label_tree = {}
-    for label in entity_labels:
-        label_1, _ = label.split()
-        entity_label_tree[label_1] = {}
-
-    for label in entity_labels:
-        try:
-            label_1, label_2, _ = label.split()
-            entity_label_tree[label_1][label_2] = None
-        except ValueError:
-            continue
-
-    for label in entity_labels:
-        try:
-            label_1, label_2, label_3 = label.split()
-            entity_label_tree[label_1][label_2] = label_3
-        except ValueError:
-            continue
 
 def get_results(model, sentence):
 
@@ -98,12 +127,12 @@ def get_results(model, sentence):
         result_list.append(results)
     return result_list
 
-def get_multi_token_results(sentence, model, entity_labels):
+def get_multi_token_results(sentence, model, trie):
     #TODO: Not Sorted
     result_list = get_results(model, sentence)
-    label_results = join_result_lists(result_list)
-    results = find_entities(label_results, entity_labels)
-    return results
+    label_results = join_result_lists(result_list, trie)
+    #results = find_entities(label_results, entity_labels)
+    return label_results
 
 
 if __name__ == '__main__':
@@ -125,5 +154,6 @@ if __name__ == '__main__':
     for model_name, model in models.items():
         sent = "[MASK] is the president of the United States."
         result_list = get_results(model, sent)
-        label_results = join_result_lists(result_list)
-        print(find_entities(label_results, entity_labels))
+        entity_trie = make_trie(entity_labels.keys())
+        label_results = join_result_lists(result_list, entity_trie)
+        print(label_results)
