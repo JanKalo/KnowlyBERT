@@ -15,17 +15,21 @@ def find_class(id, data):
         if id in instance_of_dict:
             classes = []
             for c in instance_of_dict[id]:
-                classes.append(c)
+                if c not in classes:
+                    classes.append(c)
                 for subclass in subclass_of_dict[c]:
-                    classes.append(subclass)
+                    if subclass not in classes:
+                        classes.append(subclass)
             #print(id, classes)
             return classes
         else:
             classes = []
             for c in subclass_of_dict[id]:
-                classes.append(c)
+                if c not in classes:
+                    classes.append(c)
                 for subclass in subclass_of_dict[c]:
-                    classes.append(subclass)
+                    if subclass not in classes:
+                        classes.append(subclass)
             #print(id, classes)
             return classes
     except KeyError:
@@ -163,8 +167,14 @@ def find_results_LM(result_LM, results_KG_complete, expected_classes, data):
                 dictio_entity_popularity[entity] = popularity
             if dictio_entity_popularity:
                 dictio_label_possible_entities[label] = dictio_entity_popularity
+            #popularity of the chosen entity has to be bigger than 0 to be a "good" result of LM
             if max_popularity > 0:
-                possible_results_LM[chosen_entity] = [label, probability]
+                #chose the max probability if two labels are mapped to the same entity ID
+                if chosen_entity in possible_results_LM:
+                    if probability > possible_results_LM[chosen_entity][1]:
+                        possible_results_LM[chosen_entity] = [label, probability]
+                else:
+                    possible_results_LM[chosen_entity] = [label, probability]
         #else:
         #    for k in results_KG_complete:
         #        if results_KG_complete[k] == label:

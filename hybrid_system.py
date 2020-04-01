@@ -87,18 +87,17 @@ def init(l):
 def execute(parameter, data):
     #read example file for queries
     queries_file = open(parameter["queries_path"], "r")
-    queries = set()
+    queries = []
     line = queries_file.readline().replace("\n", "")
     while line != "":
         tripel = line.split(" ")
         subj = str(tripel[0]).split('/')[-1].replace('>', "")
         prop = str(tripel[1]).split('/')[-1].replace('>', "")
         obj = str(tripel[2]).split('/')[-1].replace('>', "")
-        if prop == "P1412":
-            queries.add((subj, prop, obj))
+        if prop in data["prop_template"]:
+            queries.append([subj, prop, obj])
         line = queries_file.readline().replace("\n", "")
     print("parsed example file")
-
     #build language model
     data["lm_build"] = lm.build(parameter["lm"])
 
@@ -114,18 +113,15 @@ def execute(parameter, data):
         #output_first_try = [res.get() for res in results]
         #pool.close()
         #pool.join()
-        #queries = set()
-        #queries.add(("?", "P1412", "Q7026"))
         output_first_try = []
         count = 0
-        for (s, p, o) in queries:
-            if count == 200:
-                break
-            tripel = [s, p, o]
-            print(tripel)
+        for tripel in queries:
+            #if count == 200:
+            #    break
             result = execute_query(tripel, parameter, data)
             output_first_try.append(result)
             count = count + 1
+            print("{}/{}".format(count, len(queries)))
         #print(output_first_try)
         global all_retry_queries
         all_retry_queries = []
