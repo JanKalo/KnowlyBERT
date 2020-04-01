@@ -15,6 +15,24 @@ def readTemplates():
 
     return prop_templates
 
+
+def get_entity_labels_files(label2entity_path, entity2label_path):
+    label2entity_file = open(label2entity_path, 'r')
+    entity2label_file = open(entity2label_path, 'r')
+    label2entity_dict = json.load(label2entity_file)
+    entity2label_dict = json.load(entity2label_file)
+    return label2entity_dict, entity2label_dict
+
+_end = '_end_'
+def make_trie(words):
+    root = dict()
+    for word in words:
+        current_dict = root
+        for token in word.split():
+            current_dict = current_dict.setdefault(token, {})
+        current_dict[_end] = _end
+    return root
+
 #TODO: delete later, method just for testing
 def get_entities(relation):
     entityPairs = set()
@@ -50,21 +68,35 @@ def get_entities(relation):
             label2Entities[row.oLabel] = [row.o]
 
     return entityPairs, entity2Labels, label2Entities
-
+import math
 #TODO: Check whether this method is leading to good results
 #TODO: Maybe include confu
 def merge_rankings(results_per_template):
     intermediate_rank = {}
-
+    max_confusion = {}
+    min_confusion = {}
     for results in results_per_template:
         label_tuple, template_confidence = results
         for label, confusion in label_tuple:
-            if label in intermediate_rank:
+            if label in max_confusion:
                 #if the new confusion value is better, override the old one
-                if intermediate_rank[label] < confusion:
-                    intermediate_rank[label] = confusion
+                if max_confusion[label] < confusion:
+                    max_confusion[label] = confusion
             else:
-                intermediate_rank[label] = confusion
+                max_confusion[label] = confusion
+
+            if label in min_confusion:
+                #if the new confusion value is smaller, override the old one
+                if min_confusion[label] > confusion:
+                    min_confusion[label] = confusion
+            else:
+                min_confusion[label] = confusion
+    #compute difference of max an min as in 3.4 of paper
+    for label in max_confusion.keys():
+        max = math.exp(max_confusion[label])
+        min = math.exp(min_confusion[label])
+        if max > 0.5 - min:
+            intermediate_rank[label] = max_confusion[label]
 
     return [(k, v) for k, v in intermediate_rank.items()]
 
@@ -95,18 +127,18 @@ import os
 if __name__ == '__main__':
 
     lm = "bert"
-    prop = "P1412"
-    entity = "Q183"
+    prop = "P37"
+    entity = "Q31"
     if os.path.exists("/data/fichtel/lm_builds/model_{}".format(lm)):
         with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as config_dictionary_file:
             bert = dill.load(config_dictionary_file)
             #load entity labels
-            entities, entity2Labels, label2Entities = get_entities("http://www.wikidata.org/prop/direct/{}".format(prop))
+            label2Entities, entity2Labels = get_entity_labels_files('/home/kalo/conferences/iswc2020/data/label2entity.json','/home/kalo/conferences/iswc2020/data/entity2label.json')
 
-
+            entity_trie = make_trie(label2Entities.keys())
             #get templates
             template = readTemplates()
 
             # start ranking
-            rank = get_ranking(entity2Labels["http://www.wikidata.org/entity/{}".format(entity)],prop,"?", bert, label2Entities, template, 10)
+            rank = get_ranking(entity2Labels[entity][0] ,prop,"?", bert, entity_trie, template, 10)
             print(rank)
