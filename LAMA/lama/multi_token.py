@@ -113,7 +113,7 @@ def get_results(model, sentence):
 
         if i != 1:
             sentence = sentence.replace("[MASK]","[MASK] [MASK]", 1)
-        print(sentence)
+        #print(sentence)
         sentences = [sentence]
         original_log_probs_list, [token_ids], [masked_indices] = model.get_batch_generation([sentences], try_cuda=True)
         index_list = None

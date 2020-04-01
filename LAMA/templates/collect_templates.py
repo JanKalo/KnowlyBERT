@@ -76,7 +76,7 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
                     #if relation in set(sent_rels):
                     sent_ents = get_ents_in_sent(sent_b, abstract["entities"])
                     # index sentences containing entity pairs (e1,e2) from input relation r
-                    if len(sent_ents) >= 2:
+                    if len(sent_ents) == 2:
                         for e1 in sent_ents:
                             for e2 in sent_ents:
                                 if e1 != e2:
@@ -364,7 +364,7 @@ if __name__ == '__main__':
     #props = [ 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412',
             # 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001',
             # 'P31', 'P495', 'P159', 'P36', 'P740', 'P361']
-    props = ['P1412']
+    props = ['P37']
     for prop in props:
         for model_name, model in models.items():
             if os.path.exists("data/{}_data".format(prop)):

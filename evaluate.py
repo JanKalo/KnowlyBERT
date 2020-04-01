@@ -636,7 +636,7 @@ def read_cardinality_estimation_file(dictio_config):
 def read_template_file(dictio_config):
     #read json file for templates
     dictio_prop_templates = {}
-    file_prop_sentence = open(dictio_config["template_path"], "r")
+    file_prop_sentence = open(dictio_config["template_path"], "r", encoding="unicode-escape")
     dictio_prop_templates = json.load(file_prop_sentence)
     file_prop_sentence.close()
     return dictio_prop_templates
