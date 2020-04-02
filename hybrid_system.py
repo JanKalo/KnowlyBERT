@@ -3,7 +3,6 @@ import shlex, subprocess
 import signal
 import sys, traceback
 from time import sleep
-from multiprocessing import Lock, Pool
 import copy
 import timeit
 import simplejson as json
@@ -13,12 +12,8 @@ import build_language_model as lm
 
 class KeyboardInterruptError(Exception): pass
 
-#global variables
-lock = None
-
 #execute the queries at KG and LM
 def execute_query(tripel, parameter, data):
-    global lock
     return_list = [None, None, None, None]
     errors = []
     try:
@@ -50,23 +45,21 @@ def execute_query(tripel, parameter, data):
                     expected_classes = data["prop_classes"][tripel[1]]["QP?"]
                 else:
                     raise Exception("Tripel is in a wrong format {}".format(tripel))
-            print("expected classes ", expected_classes)
-            print("START LAMA")
-            result_LM = rank_with_templates.get_ranking(label_subj, tripel[1], label_obj, data["lm_build"], data["trie"], data["prop_template"], parameter["ts"])
+            #print("expected classes ", expected_classes)
+            #print("START LAMA")
+            result_LM = rank_with_templates.get_ranking(label_subj, tripel[1], label_obj, data["lm_build"], data["trie"], data["prop_template"], parameter["ts"], parameter["trm"])
             possible_results_LM, not_in_dictionary, errors_LM, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID = helper_functions.find_results_LM(result_LM, results_KG_complete, expected_classes, data)
             for error in errors_LM:
                 errors.append(error)
-            return_list = helper_functions.get_all_results(parameter, data, tripel[1], "{} {} {}".format(label_subj, tripel[1], label_obj), possible_results_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_incomplete, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID, errors)
+            return_list = helper_functions.get_all_results(parameter, data, tripel[1], "{} --> {} {} {}".format(tripel, label_subj, tripel[1], label_obj), possible_results_LM, result_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_incomplete, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID, errors)
         else:
             return_list = [None, None, None, errors]
     except KeyboardInterrupt:
         print("Keyboard interrupt in process")
         raise KeyboardInterruptError()
     except:
-        lock.acquire()
         print("Exception in Process")
         traceback.print_exc(file=sys.stdout)
-        lock.release()
         if len(tripel) == 3:
             query = "{} {} {}".format(tripel[0], tripel[1], tripel[2])
             error_string = query + "\n" + traceback.format_exc()
@@ -78,10 +71,6 @@ def execute_query(tripel, parameter, data):
         #print("finally end process")
         #print(return_list)
         return return_list
-
-def init(l):
-    global lock
-    lock = l
 
 #execute the hybrid system
 def execute(parameter, data):
@@ -97,32 +86,28 @@ def execute(parameter, data):
         if prop in data["prop_template"]:
             queries.append([subj, prop, obj])
         line = queries_file.readline().replace("\n", "")
+    queries_file.close()
     print("parsed example file")
     #build language model
     data["lm_build"] = lm.build(parameter["lm"])
 
-    #pool = None
     results_all_processes = []
     log = []
     errors = []
     try:
         print("start hybrid system")
-        #l = Lock()
-        #pool = Pool(processes=1, initializer=init, initargs=(l,))
-        #results = [pool.apply_async(execute_query, args=(tripel, parameter, data)) for tripel in queries]
-        #output_first_try = [res.get() for res in results]
-        #pool.close()
-        #pool.join()
+        #queries = []
+        #queries.append(["Q23541421", "P1923", "?"])
         output_first_try = []
         count = 0
         for tripel in queries:
-            #if count == 200:
+            #if count == 1:
             #    break
             result = execute_query(tripel, parameter, data)
             output_first_try.append(result)
             count = count + 1
             print("{}/{}".format(count, len(queries)))
-        #print(output_first_try)
+        
         global all_retry_queries
         all_retry_queries = []
         for o in output_first_try:
@@ -134,11 +119,6 @@ def execute(parameter, data):
         output_retry = []
         if all_retry_queries != []:
             print("Try it again: {}".format(all_retry_queries))
-            #pool = Pool(processes=1, initializer=init, initargs=(l,))
-            #results = [pool.apply_async(execute_query, args=(tripel, parameter, data)) for tripel in all_retry_queries]
-            #output_retry = [res.get() for res in results]
-            #pool.close()
-            #pool.join()
             for tripel in all_retry_queries:
                 result = execute_query(tripel, parameter, data)
                 output_retry.append(result)
@@ -160,14 +140,10 @@ def execute(parameter, data):
         
     except KeyboardInterrupt:
         print ("Keyboard interrupt in main")
-        #if pool:
-        #    pool.terminate()
         results_all_processes = []
     except:
         print("Exception in Main")
         traceback.print_exc(file=sys.stdout)
-        #if pool:
-        #    pool.terminate()
         results_all_processes = []
     finally:
         print ("Cleaning up Main")

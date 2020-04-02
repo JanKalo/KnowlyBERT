@@ -124,6 +124,8 @@ def find_results_LM(result_LM, results_KG_complete, expected_classes, data):
     errors = []
     dictio_label_possible_entities = {}
     status_possible_result_LM_label = None
+    if result_LM == []:
+        status_possible_result_LM_label = "non"
     for (label, probability) in result_LM:
         if status_possible_result_LM_label == None:
             label_KG = []
@@ -319,7 +321,7 @@ def get_data_LM(parameter, data,  query, cardinality_estimation_percentage, thre
                 already_existing = find_LM_results_already_existing(results_LM, possible_results_LM, results_KG_incomplete, threshold, parameter["mr"])
                 return number_of_adds, threshold, log, possible_results_LM, results_LM, -1, not_in_dictionary, already_existing
 
-def string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimation_percentage, number_of_adds, threshold, threshold_log, results_KG_complete, results_KG_incomplete, possible_results_LM, results_LM, results_LM_estimation):
+def string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimation_percentage, number_of_adds, threshold, threshold_log, results_KG_complete, results_KG_incomplete, possible_results_LM, all_result_LM, results_LM, results_LM_estimation, expected_classes):
     result_string = ""
     if number_of_adds == -2:
         result_string = result_string + "no cardinality estimation, hard coded max_result:" + str(parameter["mr"]) + "\n"
@@ -347,6 +349,7 @@ def string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimat
                 result_string = result_string + "find threshold for confusion\n"
                 result_string = result_string + threshold_log + "\n"
                 result_string = result_string + "calculated threshold of confusion: " +  str(threshold) + "\n"
+    result_string = result_string + "expected classes for the query: {}\n".format(expected_classes)
     result_string = result_string + "\nQUERY: {}".format(query_LM) + "\n"
     if len(results_KG_complete) <= 30:
         result_string = result_string + "Result KG complete:\n{}".format(results_KG_complete) + "\n"
@@ -366,19 +369,30 @@ def string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimat
         else:
             frist_30_possible_results_LM[res] = possible_results_LM[res]
             count = count + 1
+    frist_50_all_results_LM = []
+    count = 0
+    for res in all_result_LM:
+        if count == 50:
+            break
+        else:
+            frist_50_all_results_LM.append(res)
+            count = count + 1
     if results_LM_estimation == 0:
         result_string = result_string + "Result LM:\n{}".format(results_LM) + "\n"
         result_string = result_string + "Result LM possible:\n{}".format(frist_30_possible_results_LM) + "\n"
+        result_string = result_string + "Result LM all:\n{}".format(frist_50_all_results_LM) + "\n"
     elif results_LM_estimation == -1:
         result_string = result_string + "Result LM estimation: sampling to small --> fallback to hard coded max_results\n{}".format(results_LM) +"\n"
         result_string = result_string + "Result LM possible:\n{}".format(frist_30_possible_results_LM) + "\n"
+        result_string = result_string + "Result LM all:\n{}".format(frist_50_all_results_LM) + "\n"
     else:
         result_string = result_string + "Result LM estimation:\n{}".format(results_LM_estimation) + "\n"
         result_string = result_string + "Result LM possible:\n{}".format(frist_30_possible_results_LM) + "\n"
+        result_string = result_string + "Result LM all:\n{}".format(frist_50_all_results_LM) + "\n"
     result_string = result_string + "\n"
     return result_string
 
-def get_all_results(parameter, data, prop, query_LM, possible_results_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_imcomplete, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID, errors_actu):
+def get_all_results(parameter, data, prop, query_LM, possible_results_LM, all_result_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_imcomplete, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID, errors_actu):
     if len(parameter["cep"]) == 1 and len(parameter["tmc"]) == 1 and len(parameter["mc"]) == 1 and len(parameter["tmp"]) == 1:
         cardinality_estimation_percentage = parameter["cep"][0]
         threshold_method_confusion = parameter["tmc"][0]
@@ -386,7 +400,7 @@ def get_all_results(parameter, data, prop, query_LM, possible_results_LM, not_in
         threshold_method_percentage = parameter["tmp"][0]
         number_of_adds, threshold, threshold_log, possible_results_LM, results_LM, results_LM_estimation, not_in_dictionary, already_existing = get_data_LM(parameter, data,  query_LM, cardinality_estimation_percentage, threshold_method_confusion, threshold_method_percentage, max_confusion, prop, possible_results_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_imcomplete)
         #handeling output of KG and LM
-        log_string_result = string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimation_percentage, number_of_adds, threshold, threshold_log, results_KG_complete, results_KG_incomplete, possible_results_LM, results_LM, results_LM_estimation)
+        log_string_result = string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimation_percentage, number_of_adds, threshold, threshold_log, results_KG_complete, results_KG_incomplete, possible_results_LM, all_result_LM, results_LM, results_LM_estimation, expected_classes)
         data = [get_output_data(prop, results_KG_complete, results_KG_incomplete, possible_results_LM, results_LM, results_LM_estimation, not_in_dictionary, already_existing, status_possible_result_LM_label, status_possible_result_LM_ID, dictio_label_possible_entities)]
         retry_queries = [None]
         log = [log_string_result]
@@ -400,7 +414,7 @@ def get_all_results(parameter, data, prop, query_LM, possible_results_LM, not_in
         for cardinality_estimation_percentage in parameter["cep"]:
             number_of_adds, threshold, threshold_log, possible_results_LM, results_LM, results_LM_estimation, not_in_dictionary, already_existing = get_data_LM(parameter, data,  query_LM, cardinality_estimation_percentage, threshold_method_confusion, threshold_method_percentage, max_confusion, prop, possible_results_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_imcomplete)
             #handeling output of KG and LM
-            log_string_result = string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimation_percentage, number_of_adds, threshold, threshold_log, results_KG_complete, results_KG_incomplete, possible_results_LM, results_LM, results_LM_estimation)
+            log_string_result = string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimation_percentage, number_of_adds, threshold, threshold_log, results_KG_complete, results_KG_incomplete, possible_results_LM, all_result_LM, results_LM, results_LM_estimation, expected_classes)
             data.append(get_output_data(prop, results_KG_complete, results_KG_incomplete, possible_results_LM, results_LM, results_LM_estimation, not_in_dictionary, already_existing, status_possible_result_LM_label, status_possible_result_LM_ID, dictio_label_possible_entities))
             retry_queries.append(None)
             log.append(log_string_result)
@@ -414,7 +428,7 @@ def get_all_results(parameter, data, prop, query_LM, possible_results_LM, not_in
         for threshold_method_confusion in parameter["tmc"]:
             number_of_adds, threshold, threshold_log, possible_results_LM, results_LM, results_LM_estimation, not_in_dictionary, already_existing = get_data_LM(parameter, data,  query_LM, cardinality_estimation_percentage, threshold_method_confusion, threshold_method_percentage, max_confusion, prop, possible_results_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_imcomplete)
             #handeling output of KG and LM
-            log_string_result = string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimation_percentage, number_of_adds, threshold, threshold_log, results_KG_complete, results_KG_incomplete, possible_results_LM, results_LM, results_LM_estimation)
+            log_string_result = string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimation_percentage, number_of_adds, threshold, threshold_log, results_KG_complete, results_KG_incomplete, possible_results_LM, all_result_LM, results_LM, results_LM_estimation, expected_classes)
             data.append(get_output_data(prop, results_KG_complete, results_KG_incomplete, possible_results_LM, results_LM, results_LM_estimation, not_in_dictionary, already_existing, status_possible_result_LM_label, status_possible_result_LM_ID, dictio_label_possible_entities))
             retry_queries.append(None)
             log.append(log_string_result)
@@ -428,7 +442,7 @@ def get_all_results(parameter, data, prop, query_LM, possible_results_LM, not_in
         for max_confusion in parameter["mc"]:
             number_of_adds, threshold, threshold_log, possible_results_LM, results_LM, results_LM_estimation, not_in_dictionary, already_existing = get_data_LM(parameter, data,  query_LM, cardinality_estimation_percentage, threshold_method_confusion, threshold_method_percentage, max_confusion, prop, possible_results_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_imcomplete)
             #handeling output of KG and LM
-            log_string_result = string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimation_percentage, number_of_adds, threshold, threshold_log, results_KG_complete, results_KG_incomplete, possible_results_LM, results_LM, results_LM_estimation)
+            log_string_result = string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimation_percentage, number_of_adds, threshold, threshold_log, results_KG_complete, results_KG_incomplete, possible_results_LM, all_result_LM, results_LM, results_LM_estimation, expected_classes)
             data.append(get_output_data(prop, results_KG_complete, results_KG_incomplete, possible_results_LM, results_LM, results_LM_estimation, not_in_dictionary, already_existing, status_possible_result_LM_label, status_possible_result_LM_ID, dictio_label_possible_entities))
             retry_queries.append(None)
             log.append(log_string_result)
@@ -442,7 +456,7 @@ def get_all_results(parameter, data, prop, query_LM, possible_results_LM, not_in
         for threshold_method_percentage in parameter["tmp"]:
             number_of_adds, threshold, threshold_log, possible_results_LM, results_LM, results_LM_estimation, not_in_dictionary, already_existing = get_data_LM(parameter, data,  query_LM, cardinality_estimation_percentage, threshold_method_confusion, threshold_method_percentage, max_confusion, prop, possible_results_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_imcomplete)
             #handeling output of KG and LM
-            log_string_result = string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimation_percentage, number_of_adds, threshold, threshold_log, results_KG_complete, results_KG_incomplete, possible_results_LM, results_LM, results_LM_estimation)
+            log_string_result = string_results_KG_LM(parameter, query_LM, max_confusion, cardinality_estimation_percentage, number_of_adds, threshold, threshold_log, results_KG_complete, results_KG_incomplete, possible_results_LM, all_result_LM, results_LM, results_LM_estimation, expected_classes)
             data.append(get_output_data(prop, results_KG_complete, results_KG_incomplete, possible_results_LM, results_LM, results_LM_estimation, not_in_dictionary, already_existing, status_possible_result_LM_label, status_possible_result_LM_ID, dictio_label_possible_entities))
             retry_queries.append(None)
             log.append(log_string_result)
