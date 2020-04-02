@@ -146,7 +146,7 @@ def merge_ranking_avg(results_per_template):
 
     return [(k, v) for k, v in sorted(intermediate_rank.items(), reverse=True, key=lambda item: item[1])]
 
-def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templates):
+def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templates, trm):
 
     merged_ranking = []
 
@@ -166,7 +166,10 @@ def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templat
 
         result_per_templates.append((mt.get_multi_token_results(instantiated_template, model, entity_labels), confidence))
 
-    return merge_ranking_avg(result_per_templates)
+    if trm == "avg":
+        return merge_ranking_avg(result_per_templates)
+    if trm == "max":
+        return merge_rankings_minmax(result_per_templates)
 
 import dill
 import os
