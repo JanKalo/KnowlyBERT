@@ -71,7 +71,7 @@ def get_entities(relation):
     return entityPairs, entity2Labels, label2Entities
 
 
-def merge_ranking_avg(results_per_template):
+def merge_rankings_minmax(results_per_template):
     intermediate_rank = {}
     max_confusion = {}
     min_confusion = {}
@@ -107,7 +107,7 @@ def merge_ranking_avg(results_per_template):
 
 #TODO: Check whether this method is leading to good results
 #TODO: Maybe include confu
-def merge_rankings_minmax(results_per_template):
+def merge_ranking_avg(results_per_template):
     intermediate_rank = {}
     max_confusion = {}
     min_confusion = {}
@@ -141,10 +141,10 @@ def merge_rankings_minmax(results_per_template):
     for label in max_confusion.keys():
         max = math.exp(max_confusion[label])
         min = math.exp(min_confusion[label])
-        if max > 1.0 - min:
+        if max > 0.1 - min:
             intermediate_rank[label] = (sum_confusion[label]/denominator_confusion[label])
 
-    return [(k, v) for k, v in intermediate_rank.items()]
+    return [(k, v) for k, v in sorted(intermediate_rank.items(), reverse=True, key=lambda item: item[1])]
 
 def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templates):
 
