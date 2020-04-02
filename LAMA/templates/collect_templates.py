@@ -60,7 +60,7 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
     for file in os.listdir(input_path):
         with open(os.path.join(input_path,file), "r") as f:
             jsonf = json.load(f)
-        if len(index) >= 2000:
+        if len(index) >= 1000:
             break
 
         print(len(index))
@@ -360,11 +360,11 @@ if __name__ == '__main__':
     label2Entities, entity2Labels = get_entity_labels_files('/home/kalo/conferences/iswc2020/data/label2entity.json','/home/kalo/conferences/iswc2020/data/entity2label.json')
     entity_trie = make_trie(label2Entities.keys())
     print("read entity dictionaries and built trie")
-    #props = ['P19', 'P20', 'P279', 'P37', 'P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101', 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412', 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P36', 'P740', 'P361']
+    props = ['P19', 'P20', 'P279', 'P37', 'P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101', 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412', 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P36', 'P740', 'P361']
     #props = [ 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412',
             # 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001',
             # 'P31', 'P495', 'P159', 'P36', 'P740', 'P361']
-    props = ['P37']
+    #props = ['P37']
     for prop in props:
         for model_name, model in models.items():
             if os.path.exists("data/{}_data".format(prop)):
