@@ -78,6 +78,7 @@ def execute(parameter, data):
     queries_file = open(parameter["queries_path"], "r")
     queries = []
     line = queries_file.readline().replace("\n", "")
+    #LAMA_props = ['P364', 'P1412', 'P103', 'P413', 'P166', 'P449', 'P69', 'P47', 'P54', 'P1923', 'P106', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P1376', 'P108', 'P136', 'P17', 'P39', 'P264', 'P937', 'P140', 'P1303', 'P495', 'P36', 'P740', 'P19', 'P20', 'P37', 'P463', 'P101', 'P178', 'P131', 'P276', 'P127', 'P1001', 'P159']
     while line != "":
         tripel = line.split(" ")
         subj = str(tripel[0]).split('/')[-1].replace('>', "")
@@ -101,7 +102,7 @@ def execute(parameter, data):
         output_first_try = []
         count = 0
         for tripel in queries:
-            #if count == 1:
+            #if count == 50:
             #    break
             result = execute_query(tripel, parameter, data)
             output_first_try.append(result)

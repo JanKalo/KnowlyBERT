@@ -18,6 +18,7 @@ def evaluate(data_dictio, output_hybrid, i):
     perfect_queries = {}
     bad_queries = {}
     popularity_scores = {}
+    dictio_querynr_lm_result = {}
     if len(output_hybrid) > 0:
         data_output_hybrid = []
         for d in output_hybrid:
@@ -60,7 +61,7 @@ def evaluate(data_dictio, output_hybrid, i):
                 dictio_props[prop] = count + 1
             else:
                 dictio_props[prop] = 1
-        for data in data_output_hybrid:
+        for nr, data in enumerate(data_output_hybrid):
             prop = data["prop"]
             dictio_label_possible_entities = data["label_possible_entities"]
             if dictio_label_possible_entities != {}:
@@ -95,6 +96,7 @@ def evaluate(data_dictio, output_hybrid, i):
                 count_no_entry_o_r = count_no_entry_o_r +1
 
             results_LM = data["LM"]
+            dictio_querynr_lm_result[nr] = list(results_LM.keys())
             already_existing = data["already_existing"]
             if already_existing:
                 count_already_existing = count_already_existing +1
@@ -132,7 +134,7 @@ def evaluate(data_dictio, output_hybrid, i):
                         list_values.append(not_in_dictionary[nid])
                 else:
                     missing[nid] = [not_in_dictionary[nid]]
-
+                    
             #find matching LM results and KG results
             for entity_id_url in results_LM:
                 if entity_id_url in keys_results_KG_current:
@@ -340,7 +342,7 @@ def evaluate(data_dictio, output_hybrid, i):
             count_bad_queries = completely_correct_incorrect+correct_already_existing_incorrect+at_least_one_correct_incorrect+begin_correct_mixed+begin_incorrect+incorrect
             percentage_bad_queries =  round((completely_correct_incorrect+correct_already_existing_incorrect+at_least_one_correct_incorrect+begin_correct_mixed+begin_incorrect+incorrect)/data_amount*100, 2)
             
-    return popularity_scores, string_eval, string_eval_props, list_query_assign, perfect_queries, count_perfect_queries, percentage_perfect_queries, bad_queries, count_bad_queries, percentage_bad_queries, props_no_result, no_results, round(no_results/data_amount*100, 2), data_amount, missing, dictio_prop_label_possible_entities
+    return dictio_querynr_lm_result, popularity_scores, string_eval, string_eval_props, list_query_assign, perfect_queries, count_perfect_queries, percentage_perfect_queries, bad_queries, count_bad_queries, percentage_bad_queries, props_no_result, no_results, round(no_results/data_amount*100, 2), data_amount, missing, dictio_prop_label_possible_entities
 
 def correct_parameter(mc, cep, tmc, tmp, ts):
     if ts < 1:
@@ -369,7 +371,10 @@ def write_into_files(i, folder, mc, cep, tmc, tmp, file_evaluation, hybrid_outpu
     actu_list_hybrid_log = []
     for log in list_hybrid_log:
         actu_list_hybrid_log.append(log[i])
-    popularity_scores, string_evaluation, string_eval_props, list_query_assign, perfect_queries, count_perfect_queries, percentage_perfect_queries, bad_queries, count_bad_queries, percentage_bad_queries, props_no_result, count_no_result_queries, percentage_no_result, data_amount, missing, dictio_prop_label_possible_entities = evaluate(data, hybrid_output, i)
+    dictio_querynr_lm_result, popularity_scores, string_evaluation, string_eval_props, list_query_assign, perfect_queries, count_perfect_queries, percentage_perfect_queries, bad_queries, count_bad_queries, percentage_bad_queries, props_no_result, count_no_result_queries, percentage_no_result, data_amount, missing, dictio_prop_label_possible_entities = evaluate(data, hybrid_output, i)
+    file_phil = open("evaluation/{}/eval_phil_{}.json".format(folder, i), "w")
+    json.dump(dictio_querynr_lm_result, file_phil)
+    file_phil.close()
     if missing:
         file_missing = open("evaluation/{}/dictio_missing".format(folder), "w")
         file_missing.write("Results of LM, which are not in dictionary, but would be correct\n")
@@ -652,8 +657,7 @@ def read_cardinality_estimation_file(dictio_config):
 def read_template_file(dictio_config):
     #read json file for templates
     dictio_prop_templates = {}
-    #file_prop_sentence = open(dictio_config["template_path"], "r", encoding="unicode-escape")
-    file_prop_sentence = open(dictio_config["template_path"], "r")
+    file_prop_sentence = open(dictio_config["template_path"], "r", encoding="utf8")
     dictio_prop_templates = json.load(file_prop_sentence)
     file_prop_sentence.close()
     return dictio_prop_templates
@@ -729,7 +733,67 @@ if __name__ == '__main__':
     #trm: string which ranking method should be used for the labels of different templates: "avg" oder "max"
     #apc: value wheather the property classes should always be used
 
-    #evaluation test
+    #evaluation 1
+    parameter = {}
+    parameter["wikidata_incomplete"] = "random_incomplete"
+    parameter["queries_path"] = dictio_config["queries_path"]
+    parameter["lm"] = "bert"
+    parameter["mc"] = [-7]
+    parameter["mr"] = 1000
+    parameter["ces"] = -1
+    parameter["cep"] = [-1]
+    parameter["tmc"] = [-0.01, -0.1, -0.5, -1, -1.4, -1.5, -2, -3, -4, -100]
+    parameter["tmn"] = 10
+    parameter["tmp"] = [0.5]
+    parameter["ts"] = 5
+    parameter["trm"] = "max"
+    parameter["apc"] = False
+    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+
+    #evaluation 2
+    parameter = {}
+    parameter["wikidata_incomplete"] = "random_incomplete"
+    parameter["queries_path"] = dictio_config["queries_path"]
+    parameter["lm"] = "bert"
+    parameter["mc"] = [-7]
+    parameter["mr"] = 1000
+    parameter["ces"] = -1
+    parameter["cep"] = [-1]
+    parameter["tmc"] = [-0.01, -0.1, -0.5, -1, -1.4, -1.5, -2, -3, -4, -100]
+    parameter["tmn"] = 10
+    parameter["tmp"] = [0.5]
+    parameter["ts"] = 5
+    parameter["trm"] = "avg"
+    parameter["apc"] = False
+    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+
+    #evaluation 3
+    parameter = {}
+    parameter["wikidata_incomplete"] = "random_incomplete"
+    parameter["queries_path"] = dictio_config["queries_path"]
+    parameter["lm"] = "bert"
+    parameter["mc"] = [-7]
+    parameter["mr"] = 1000
+    parameter["ces"] = -1
+    parameter["cep"] = [-1]
+    parameter["tmc"] = [-0.01, -0.1, -0.5, -1, -1.4, -1.5, -2, -3, -4, -100]
+    parameter["tmn"] = 10
+    parameter["tmp"] = [0.5]
+    parameter["ts"] = 1
+    parameter["trm"] = "max"
+    parameter["apc"] = False
+    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+
+    #evaluation 4
     parameter = {}
     parameter["wikidata_incomplete"] = "random_incomplete"
     parameter["queries_path"] = dictio_config["queries_path"]
