@@ -596,16 +596,16 @@ def read_dataset_files(dictio_config):
                 dictio_wikidata_objects[prop][subj]["random_incomplete"].append(obj)
     wikidata_missing_tripels.close()
 
-    file_objects = open("{}_dictio_wikidata_objects.json".format(actu_prop), "w")
-    temp = {}
-    temp[actu_prop] = dictio_wikidata_objects[actu_prop]
-    json.dump(temp, file_objects)
-    file_objects.close()
-    file_subjects = open("{}_dictio_wikidata_subjects.json".format(actu_prop), "w")
-    temp = {}
-    temp[actu_prop] = dictio_wikidata_subjects[actu_prop]
-    json.dump(temp, file_subjects)
-    file_subjects.close()
+    #file_objects = open("{}_dictio_wikidata_objects.json".format(actu_prop), "w")
+    #temp = {}
+    #temp[actu_prop] = dictio_wikidata_objects[actu_prop]
+    #json.dump(temp, file_objects)
+    #file_objects.close()
+    #file_subjects = open("{}_dictio_wikidata_subjects.json".format(actu_prop), "w")
+    #temp = {}
+    #temp[actu_prop] = dictio_wikidata_subjects[actu_prop]
+    #json.dump(temp, file_subjects)
+    #file_subjects.close()
 
     #file_objects = open("dictio_wikidata_objects.json", "w")
     #json.dump(dictio_wikidata_objects, file_objects)
