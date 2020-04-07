@@ -70,7 +70,7 @@ def read_p31_p279_file(dictio_config):
 def read_dataset_file(dictio_config):   
     #parsing the wikidata datasets
     dictio_wikidata_objects = {} #maps objects to given subject an property of complete and incomplete wikidata
-    wikidata_missing_tripels = open(dictio_config["wikidata_missing_tripel_path"], "r")
+    wikidata_missing_tripels = open(dictio_config["wikidata_missing_tripel_path"]["new"], "r")
     for line in wikidata_missing_tripels:
         tripel = (line.replace("\n", "")).split(" ")
         subj = str(tripel[0]).split('/')[-1].replace('>', "")
