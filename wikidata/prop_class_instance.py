@@ -105,7 +105,8 @@ def main():
             values = []
             subjects = dictio_wikidata_objects[p]
             for subj in subjects:
-                items.append(subj)
+                for _ in range(0, len(dictio_wikidata_objects[p][subj])):
+                    items.append(subj)
                 objects = dictio_wikidata_objects[p][subj]
                 for obj in objects:
                     values.append(obj)

@@ -48,7 +48,7 @@ def execute_query(tripel, parameter, data):
             #print("expected classes ", expected_classes)
             #print("START LAMA")
             result_LM = rank_with_templates.get_ranking(label_subj, tripel[1], label_obj, data["lm_build"], data["trie"], data["prop_template"], parameter["ts"], parameter["trm"])
-            possible_results_LM, not_in_dictionary, errors_LM, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID = helper_functions.find_results_LM(result_LM, results_KG_complete, expected_classes, data)
+            possible_results_LM, not_in_dictionary, errors_LM, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID = helper_functions.find_results_LM(result_LM, results_KG_complete, expected_classes, parameter, data)
             for error in errors_LM:
                 errors.append(error)
             return_list = helper_functions.get_all_results(parameter, data, tripel[1], "{} --> {} {} {}".format(tripel, label_subj, tripel[1], label_obj), possible_results_LM, result_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_incomplete, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID, errors)
@@ -98,7 +98,7 @@ def execute(parameter, data):
     try:
         print("start hybrid system")
         #queries = []
-        #queries.append(["Q23541421", "P1923", "?"])
+        #queries.append(['?', 'P103', 'Q8752'])
         output_first_try = []
         count = 0
         for tripel in queries:

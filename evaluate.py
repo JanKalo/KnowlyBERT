@@ -396,7 +396,7 @@ def write_into_files(i, folder, mc, cep, tmc, tmp, file_evaluation, hybrid_outpu
         error_file.close()
     file_log_and_evaluation = open("evaluation/{}/log_eval_{}.txt".format(folder, i), "w")
     file_log_and_evaluation.write(parameter["queries_path"]+"\n")
-    file_log_and_evaluation.write("Language Model: {}, max_confusion: {}, max_result_LM: {}, cardinality_estimation_sampling: {}, cardinality_estimation_percentage: {}, threshold_method_confusion: {}, threshold_method_number: {}, threshold_method_percentage: {}, template_sampling: {}, template_ranking_method: {}, always_prop_classes: {}\n\n".format(parameter["lm"], mc, parameter["mr"], parameter["ces"], cep, tmc, parameter["tmn"], tmp, parameter["ts"], parameter["trm"], parameter["apc"]))
+    file_log_and_evaluation.write("Language Model: {}, max_confusion: {}, max_result_LM: {}, cardinality_estimation_sampling: {}, cardinality_estimation_percentage: {}, threshold_method_confusion: {}, threshold_method_number: {}, threshold_method_percentage: {}, template_path: {}, template_sampling: {}, template_ranking_method: {}, always_prop_classes: {}, min popularity score: {}\n\n".format(parameter["lm"], mc, parameter["mr"], parameter["ces"], cep, tmc, parameter["tmn"], tmp, parameter["tp"], parameter["ts"], parameter["trm"], parameter["apc"], parameter["ps"]))
     if len(actu_list_hybrid_log) == len(list_query_assign):
         for i in range(0, len(actu_list_hybrid_log)):
             file_log_and_evaluation.write(list_query_assign[i]+"\n")
@@ -413,7 +413,7 @@ def write_into_files(i, folder, mc, cep, tmc, tmp, file_evaluation, hybrid_outpu
     if file_evaluation:
         sorted_popularity_scores = {k: v for k, v in sorted(popularity_scores.items(), key=lambda item: item)}
         file_evaluation.write("popularity scores: {}\n\n".format({k: sorted_popularity_scores[k] for k in list(sorted_popularity_scores)[:100]}))
-        file_evaluation.write("Language Model: {}, max_confusion: {}, max_result_LM: {}, cardinality_estimation_sampling: {}, cardinality_estimation_percentage: {}, threshold_method_confusion: {}, threshold_method_number: {}, threshold_method_percentage: {}, template_sampling: {}, template_ranking_method: {}, always_prop_classes: {}\n".format(parameter["lm"], mc, parameter["mr"], parameter["ces"], cep, tmc, parameter["tmn"], tmp, parameter["ts"], parameter["trm"], parameter["apc"]))
+        file_evaluation.write("Language Model: {}, max_confusion: {}, max_result_LM: {}, cardinality_estimation_sampling: {}, cardinality_estimation_percentage: {}, threshold_method_confusion: {}, threshold_method_number: {}, threshold_method_percentage: {}, template_path: {}, template_sampling: {}, template_ranking_method: {}, always_prop_classes: {}, min popularity score: {}\n\n".format(parameter["lm"], mc, parameter["mr"], parameter["ces"], cep, tmc, parameter["tmn"], tmp, parameter["tp"], parameter["ts"], parameter["trm"], parameter["apc"], parameter["ps"]))
         file_evaluation.write(string_evaluation+"\n\n")
         temp_perfect_queries = {}
         for prop in perfect_queries:
@@ -542,7 +542,7 @@ def read_dataset_files(dictio_config):
     dictio_wikidata_subjects = {} #maps subjects to given property and object of complete and incomplete wikidata
     dictio_wikidata_objects = {} #maps objects to given subject an property of complete and incomplete wikidata
     #only for debugging
-    #actu_prop = "P1923"
+    #actu_prop = "P103"
     #if os.path.exists("{}_dictio_wikidata_objects.json".format(actu_prop)) and os.path.exists("{}_dictio_wikidata_subjects.json".format(actu_prop)):
     #    with open("{}_dictio_wikidata_subjects.json".format(actu_prop), "r") as subjects:
     #        dictio_wikidata_subjects = json.load(subjects)
@@ -596,16 +596,16 @@ def read_dataset_files(dictio_config):
                 dictio_wikidata_objects[prop][subj]["random_incomplete"].append(obj)
     wikidata_missing_tripels.close()
 
-    #file_objects = open("{}_dictio_wikidata_objects.json".format(actu_prop), "w")
-    #temp = {}
-    #temp[actu_prop] = dictio_wikidata_objects[actu_prop]
-    #json.dump(temp, file_objects)
-    #file_objects.close()
-    #file_subjects = open("{}_dictio_wikidata_subjects.json".format(actu_prop), "w")
-    #temp = {}
-    ##temp[actu_prop] = dictio_wikidata_subjects[actu_prop]
-    #json.dump(temp, file_subjects)
-    #file_subjects.close()
+    file_objects = open("{}_dictio_wikidata_objects.json".format(actu_prop), "w")
+    temp = {}
+    temp[actu_prop] = dictio_wikidata_objects[actu_prop]
+    json.dump(temp, file_objects)
+    file_objects.close()
+    file_subjects = open("{}_dictio_wikidata_subjects.json".format(actu_prop), "w")
+    temp = {}
+    temp[actu_prop] = dictio_wikidata_subjects[actu_prop]
+    json.dump(temp, file_subjects)
+    file_subjects.close()
 
     #file_objects = open("dictio_wikidata_objects.json", "w")
     #json.dump(dictio_wikidata_objects, file_objects)
@@ -654,10 +654,10 @@ def read_cardinality_estimation_file(dictio_config):
     file_prop_mu_sig.close()
     return dictio_prop_probdistribution
 
-def read_template_file(dictio_config):
+def read_template_file(path):
     #read json file for templates
     dictio_prop_templates = {}
-    file_prop_sentence = open(dictio_config["template_path"], "r", encoding="utf8")
+    file_prop_sentence = open(path, "r", encoding="utf8")
     dictio_prop_templates = json.load(file_prop_sentence)
     file_prop_sentence.close()
     return dictio_prop_templates
@@ -699,7 +699,6 @@ if __name__ == '__main__':
     dictio_id_label = read_id_label_file(dictio_config)
     dictio_id_p31, dictio_id_p279 = read_p31_p279_file(dictio_config)
     #dictio_prop_probdistribution = read_cardinality_estimation_file(dictio_config)
-    dictio_prop_templates = read_template_file(dictio_config)
     dictio_prop_classes = read_prop_classes_file(dictio_config)
     dictio_entity_popularity = read_entity_popularity_file(dictio_config)
 
@@ -713,7 +712,6 @@ if __name__ == '__main__':
     data["id_p31"] = dictio_id_p31
     data["id_p279"] = dictio_id_p279
     #data["prop_probdistribution"] = dictio_prop_probdistribution
-    data["prop_template"] = dictio_prop_templates
     data["prop_classes"] = dictio_prop_classes
     data["entity_popularity"] = dictio_entity_popularity
     print("read all data files")
@@ -729,9 +727,11 @@ if __name__ == '__main__':
     #tmc: threshold for probability at threshold calculation for probability --> not activated: 0
     #tmn: threshold for number of results at threshold calculation for probability --> not activated: 0
     #tmp: threshold for percentage at threshold calculation for probability --> not activated: 0
+    #tp: path to the templates which are used
     #ts: value how many templates should be used
     #trm: string which ranking method should be used for the labels of different templates: "avg" oder "max"
     #apc: value wheather the property classes should always be used
+    #ps: min value for entity popularity score (no negativ values)
 
     #evaluation 1
     parameter = {}
@@ -745,9 +745,11 @@ if __name__ == '__main__':
     parameter["tmc"] = [-0.01, -0.1, -0.5, -1, -1.4, -1.5, -2, -3, -4, -100]
     parameter["tmn"] = 10
     parameter["tmp"] = [0.5]
+    parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 5
     parameter["trm"] = "max"
     parameter["apc"] = False
+    parameter["ps"] = 1
     if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -765,9 +767,11 @@ if __name__ == '__main__':
     parameter["tmc"] = [-0.01, -0.1, -0.5, -1, -1.4, -1.5, -2, -3, -4, -100]
     parameter["tmn"] = 10
     parameter["tmp"] = [0.5]
+    parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 5
     parameter["trm"] = "avg"
     parameter["apc"] = False
+    parameter["ps"] = 1
     if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -785,13 +789,15 @@ if __name__ == '__main__':
     parameter["tmc"] = [-0.01, -0.1, -0.5, -1, -1.4, -1.5, -2, -3, -4, -100]
     parameter["tmn"] = 10
     parameter["tmp"] = [0.5]
+    parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 1
     parameter["trm"] = "max"
     parameter["apc"] = False
-    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
-        evaluations.append(parameter)
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+    parameter["ps"] = 1
+    #if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+    #    evaluations.append(parameter)
+    #else:
+    #    print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
     #evaluation 4
     parameter = {}
@@ -805,16 +811,19 @@ if __name__ == '__main__':
     parameter["tmc"] = [-0.01, -0.1, -0.5, -1, -1.4, -1.5, -2, -3, -4, -100]
     parameter["tmn"] = 10
     parameter["tmp"] = [0.5]
+    parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 10
     parameter["trm"] = "max"
     parameter["apc"] = False
-    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
-        evaluations.append(parameter)
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+    parameter["ps"] = 1
+    #if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+    #    evaluations.append(parameter)
+    #else:
+    #    print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
     runtime = []
     for parameter in evaluations:
+        data["prop_template"] = read_template_file(parameter["tp"])
         start = timeit.default_timer()
         hybrid_output, list_hybrid_log, list_errors = hybrid_system.execute(parameter, data)
         stop = timeit.default_timer()

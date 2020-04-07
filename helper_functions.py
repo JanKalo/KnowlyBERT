@@ -117,7 +117,7 @@ def find_results_KG_incomplete(tripel, parameter, data):
                     expected_classes.append(c)
     return results_KG_incomplete, expected_classes, errors
 
-def find_results_LM(result_LM, results_KG_complete, expected_classes, data):
+def find_results_LM(result_LM, results_KG_complete, expected_classes, parameter, data):
     #return all possible results which fits to the classes of the KG results
     possible_results_LM = {}
     not_in_dictionary = {}         
@@ -169,8 +169,8 @@ def find_results_LM(result_LM, results_KG_complete, expected_classes, data):
                 dictio_entity_popularity[entity] = popularity
             if dictio_entity_popularity:
                 dictio_label_possible_entities[label] = dictio_entity_popularity
-            #popularity of the chosen entity has to be bigger than 0 to be a "good" result of LM
-            if max_popularity > 0:
+            #popularity of the chosen entity has to be >= as parameter["ps"] to be a "good" result of LM
+            if max_popularity >= parameter["ps"]:
                 #chose the max probability if two labels are mapped to the same entity ID
                 if chosen_entity in possible_results_LM:
                     if probability > possible_results_LM[chosen_entity][1]:
