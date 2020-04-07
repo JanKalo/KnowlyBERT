@@ -8,7 +8,8 @@ import evaluation_metrics as evaluation_metrics
 import multi_token
 import os
 import dill
-
+import random
+from itertools import islice
 def get_rels_in_sent(
         sent_b,
         ents,
@@ -26,7 +27,8 @@ def get_rels_in_sent(
         ))
     output_set = set()
     for ent in sent_ents:
-        output_set.add(ent["uri"])
+        relation = ent['uri'].replace("http://www.wikidata.org/prop/direct/","")
+        output_set.add(relation)
 
     return output_set
 
@@ -54,16 +56,18 @@ def get_ents_in_sent(
     return sent_ents
 
 
-def index_sentences(input_path, entityPairs, relation, entityLabels):
-    maxLength = 25
-    index = []
+def index_sentences(input_path, entityPairDict, props, entityLabels):
+
+    maxLength = 100
+    index = {}
+    number_of_files = len(os.listdir(input_path))
+    current_file_no = 0
     for file in os.listdir(input_path):
+        current_file_no += 1
+        print("Reading file number {} of {} files".format(current_file_no, number_of_files))
         with open(os.path.join(input_path,file), "r") as f:
             jsonf = json.load(f)
-        if len(index) >= 1000:
-            break
 
-        print(len(index))
         # go through every abstract associated to an entity
         for abstract in jsonf:
 
@@ -72,9 +76,10 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
                 sent = abstract["text"][sent_b[0]:sent_b[1]]
                 if len(sent.split()) <= maxLength:
                     # get entities in this boundary
-                    #sent_rels = get_rels_in_sent(sent_b, abstract["entities"])
+                    sent_rels = get_rels_in_sent(sent_b, abstract["entities"])
                     #if relation in set(sent_rels):
                     sent_ents = get_ents_in_sent(sent_b, abstract["entities"])
+
                     # index sentences containing entity pairs (e1,e2) from input relation r
                     if len(sent_ents) == 2:
                         for e1 in sent_ents:
@@ -83,65 +88,70 @@ def index_sentences(input_path, entityPairs, relation, entityLabels):
                                     try:
                                         e1['uri'] = e1['uri'].replace("http://www.wikidata.org/entity/", "")
                                         e2['uri'] = e2['uri'].replace("http://www.wikidata.org/entity/", "")
-                                        if (e1['uri'],e2['uri']) in entityPairs:
-                                            e1_too_short_surfaceform = False
+                                        #check for sentence whether it belongs to one of the input relations in props
+                                        for prop in props:
+                                            entityPairs = entityPairDict[prop]
+                                            if (e1['uri'],e2['uri']) in entityPairs and prop in sent_rels:
+                                                e1_too_short_surfaceform = False
 
-                                            if e1['boundaries'][1] - e1['boundaries'][0] != len(entityLabels[e1['uri']][0]):
-                                                e1_label_token = entityLabels[e1['uri']][0].split(" ")
-                                                for token in e1_label_token:
-                                                    if token in e1["surfaceform"].split(" "):
-                                                        e1_too_short_surfaceform = True
-                                                        #print("too short surfaceform")
-                                                        #print("label:{}, surfaceform:{}\n".format(entityLabels[e1['uri']], e1["surfaceform"]))
-                                                        break
-                                            e2_too_short_surfaceform = False
-                                            if e2['boundaries'][1] - e2['boundaries'][0] != len(entityLabels[e2['uri']][0]):
-                                                e2_label_token = entityLabels[e2['uri']][0].split(" ")
-                                                for token in e2_label_token:
-                                                    if token in e2["surfaceform"].split(" "):
-                                                        e2_too_short_surfaceform = True
-                                                        #print("too short surfaceform")
-                                                        #print("label:{}, surfaceform:{}\n".format(entityLabels[e2['uri']], e2["surfaceform"]))
-                                                        break
+                                                if e1['boundaries'][1] - e1['boundaries'][0] != len(entityLabels[e1['uri']][0]):
+                                                    e1_label_token = entityLabels[e1['uri']][0].split(" ")
+                                                    for token in e1_label_token:
+                                                        if token in e1["surfaceform"].split(" "):
+                                                            e1_too_short_surfaceform = True
+                                                            #print("too short surfaceform")
+                                                            #print("label:{}, surfaceform:{}\n".format(entityLabels[e1['uri']], e1["surfaceform"]))
+                                                            break
+                                                e2_too_short_surfaceform = False
+                                                if e2['boundaries'][1] - e2['boundaries'][0] != len(entityLabels[e2['uri']][0]):
+                                                    e2_label_token = entityLabels[e2['uri']][0].split(" ")
+                                                    for token in e2_label_token:
+                                                        if token in e2["surfaceform"].split(" "):
+                                                            e2_too_short_surfaceform = True
+                                                            #print("too short surfaceform")
+                                                            #print("label:{}, surfaceform:{}\n".format(entityLabels[e2['uri']], e2["surfaceform"]))
+                                                            break
 
-                                            if e1_too_short_surfaceform == False and e2_too_short_surfaceform == False:
-                                                entry = {}
-                                                #check wheather label has maximum length of 3, because multi_token.py handles maximum 3 [MASK]
-                                                if len(entityLabels[e1['uri']][0].split(" ")) <= 3 and len(entityLabels[e2['uri']][0].split(" ")) <= 3:
-                                                    #replace the current surfaceform with the label of wikidata, which are used
-                                                    if e1['boundaries'][0] < e2['boundaries'][0]:
-                                                        sentence = sent[:e1['boundaries'][0]] + entityLabels[e1['uri']][0] + sent[e1['boundaries'][1]:e2['boundaries'][0]] + entityLabels[e2['uri']][0] + sent[e2['boundaries'][1]:]
-                                                    elif e1['boundaries'][0] > e2['boundaries'][0]:
-                                                        sentence = sent[:e2['boundaries'][0]] + entityLabels[e2['uri']][0] + sent[e2['boundaries'][1]:e1['boundaries'][0]] + entityLabels[e1['uri']][0] + sent[e1['boundaries'][1]:]
-                                                    else:
-                                                        sentence = -1
-                                                        print("subject==object --> sentence: {}, surfaceform: {}".format(sent ,e1["surfaceform"]))
-
-                                                    if sentence != -1:
-                                                        entry['sentence'] = sentence
-                                                        entry['entities'] = (e1['uri'],e2['uri'])
-
-                                                        #adjust boundaries
+                                                if e1_too_short_surfaceform == False and e2_too_short_surfaceform == False:
+                                                    entry = {}
+                                                    #check wheather label has maximum length of 3, because multi_token.py handles maximum 3 [MASK]
+                                                    if len(entityLabels[e1['uri']][0].split(" ")) <= 3 and len(entityLabels[e2['uri']][0].split(" ")) <= 3:
+                                                        #replace the current surfaceform with the label of wikidata, which are used
                                                         if e1['boundaries'][0] < e2['boundaries'][0]:
-                                                            e1_boundary_diff = len(entityLabels[e1['uri']][0]) - (e1['boundaries'][1] - e1['boundaries'][0])
-                                                            entry['e1'] = e1['boundaries'][:]
-                                                            entry['e1'][1] = entry['e1'][0] + len(entityLabels[e1['uri']][0])
-                                                            entry['e2'] = e2['boundaries']
-                                                            entry['e2'][0] = entry['e2'][0] + e1_boundary_diff
-                                                            entry['e2'][1] = entry['e2'][0] + len(entityLabels[e2['uri']][0])
+                                                            sentence = sent[:e1['boundaries'][0]] + entityLabels[e1['uri']][0] + sent[e1['boundaries'][1]:e2['boundaries'][0]] + entityLabels[e2['uri']][0] + sent[e2['boundaries'][1]:]
                                                         elif e1['boundaries'][0] > e2['boundaries'][0]:
-                                                            e2_boundary_diff = len(entityLabels[e2['uri']][0]) - (e2['boundaries'][1] - e2['boundaries'][0])
-                                                            entry['e2'] = e2['boundaries'][:]
-                                                            entry['e2'][1] = entry['e2'][0] + len(entityLabels[e2['uri']][0])
-                                                            entry['e1'] = e1['boundaries']
-                                                            entry['e1'][0] = entry['e1'][0] + e2_boundary_diff
-                                                            entry['e1'][1] = entry['e1'][0] + len(entityLabels[e1['uri']][0])
+                                                            sentence = sent[:e2['boundaries'][0]] + entityLabels[e2['uri']][0] + sent[e2['boundaries'][1]:e1['boundaries'][0]] + entityLabels[e1['uri']][0] + sent[e1['boundaries'][1]:]
+                                                        else:
+                                                            sentence = -1
+                                                            print("subject==object --> sentence: {}, surfaceform: {}".format(sent ,e1["surfaceform"]))
 
-                                                        index.append(entry)
+                                                        if sentence != -1:
+                                                            entry['sentence'] = sentence
+                                                            entry['entities'] = (e1['uri'],e2['uri'])
+
+                                                            #adjust boundaries
+                                                            if e1['boundaries'][0] < e2['boundaries'][0]:
+                                                                e1_boundary_diff = len(entityLabels[e1['uri']][0]) - (e1['boundaries'][1] - e1['boundaries'][0])
+                                                                entry['e1'] = e1['boundaries'][:]
+                                                                entry['e1'][1] = entry['e1'][0] + len(entityLabels[e1['uri']][0])
+                                                                entry['e2'] = e2['boundaries']
+                                                                entry['e2'][0] = entry['e2'][0] + e1_boundary_diff
+                                                                entry['e2'][1] = entry['e2'][0] + len(entityLabels[e2['uri']][0])
+                                                            elif e1['boundaries'][0] > e2['boundaries'][0]:
+                                                                e2_boundary_diff = len(entityLabels[e2['uri']][0]) - (e2['boundaries'][1] - e2['boundaries'][0])
+                                                                entry['e2'] = e2['boundaries'][:]
+                                                                entry['e2'][1] = entry['e2'][0] + len(entityLabels[e2['uri']][0])
+                                                                entry['e1'] = e1['boundaries']
+                                                                entry['e1'][0] = entry['e1'][0] + e2_boundary_diff
+                                                                entry['e1'][1] = entry['e1'][0] + len(entityLabels[e1['uri']][0])
+
+                                                            if prop in index:
+                                                                index[prop].append(entry)
+                                                            else:
+                                                                index[prop] = [entry]
                                     except KeyError:
                                         print("WARNING: KeyError")
                                         continue
-
 
                 # done for file fn
     return index
@@ -211,45 +221,37 @@ def get_entities_db(relation):
 
     return entityPairs, entity2Labels, label2Entities
 
-from itertools import islice
+import random
 # Implementation of rank1 method from Bouroui et al.
-def rank_sentences_1(model, index_entry, entityPairs, entityLabels):
+def rank_sentences_1(model, index_entry, entityPairs, entityLabels, labelTrie, randomEntities):
     output_rank = 0
     orig_sentence = index_entry['sentence']
     print(orig_sentence)
-    for idx, (e1,e2) in enumerate(islice(entityPairs,0,1000)):
+    for idx, (e1,e2) in enumerate(randomEntities):
         e1_label = entityLabels[e1][0]
         e2_label = entityLabels[e2][0]
 
         correct_e1_labels = set(entityLabels[e1])
         correct_e2_labels = set(entityLabels[e2])
-        sentence_1 = orig_sentence.replace(entityLabels[e1], '[MASK]')
-        sentence_1 = sentence_1.replace(entityLabels[e2], e2_label)
-
-        sentence_2 = orig_sentence.replace(entityLabels[e2], '[MASK]')
-        sentence_2 = sentence_2.replace(entityLabels[e1], e1_label)
+        #insert mask tokens
+        e1 = orig_sentence[index_entry['e1'][0]:index_entry['e1'][1]]
+        e2 = orig_sentence[index_entry['e2'][0]:index_entry['e2'][1]]
+        sentence_1 = orig_sentence[:index_entry['e1'][0]] + "[MASK]" + orig_sentence[index_entry['e1'][1]:]
+        sentence_2 = orig_sentence[:index_entry['e2'][0]] + "[MASK]" + orig_sentence[index_entry['e2'][1]:]
+        #insert entities from pair
+        sentence_1 = sentence_1.replace(e2,e2_label)
+        sentence_2 = sentence_2.replace(e1,e1_label)
         sentences = []
         sentences.append(sentence_1)
         sentences.append(sentence_2)
 
-        original_log_probs_list, [token_ids], [masked_indices] = model.get_batch_generation([sentences], try_cuda=True)
-        index_list = None
-
-        filtered_log_probs_list = original_log_probs_list
-
-        # build topk lists for this template and safe in ret1 and ret2
-        if masked_indices and len(masked_indices) > 0:
-            results = evaluation_metrics.get_ranking(filtered_log_probs_list[0], masked_indices, model.vocab,
-                                                 index_list=index_list)
-        if idx % 100 == 0:
-            sys.stdout.write('\r{} / {} '.format(idx, len(entityPairs)))
-            sys.stdout.flush()
-        for i in range(0,10):
-            if results[0]['topk'][i]['token_word_form'] in correct_e1_labels:
+        for result, value in multi_token.get_multi_token_results(sentence_1, model, labelTrie):
+            if result in correct_e1_labels:
                 output_rank += 1
-            if results[1]['topk'][i]['token_word_form'] in correct_e2_labels:
+        for result, value in multi_token.get_multi_token_results(sentence_2, model, labelTrie):
+            if result in correct_e2_labels:
                 output_rank += 1
-
+    print(output_rank)
     return output_rank
 
 
@@ -297,48 +299,49 @@ def similar_string(a, b):
 
 import re
 def find_similar_sentences(index, entity2Labels):
-    similar_templates = {}
-    unique_templates = {}
-    filtered_index = []
-    for sentence in index:
-        orig_sentence = sentence["sentence"]
-        if sentence['e1'][0] < sentence['e2'][0]:
-            subject_object_template = orig_sentence[:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:]
-        else:
-            subject_object_template = orig_sentence[:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:]
-        if subject_object_template not in unique_templates:
-            #if not re.match(".*[0-9][0-9][0-9][0-9].*", subject_object_template):
-            unique_templates[subject_object_template] = sentence
-
-    for template in unique_templates:
-        find_suitable_key_template = False
-        for key_template in similar_templates:
-            if find_suitable_key_template == True:
-                break
-            elif similar_string(key_template, template) > 0.8:
-                find_suitable_key_template = True
-                similar_templates[key_template].append(template)
-            else:
-                for similar_template in similar_templates[key_template]:
-                    if similar_string(similar_template, template) > 0.8:
-                        find_suitable_key_template = True
-                        similar_templates[key_template].append(template)
-                        break
-        if find_suitable_key_template == False:
-            similar_templates[template] = []
-
-    #for sent in similar_templates:
-    #    print("{} --> {}\n".format(sent, similar_templates[sent]))
-    #print(len(index))
-    #print(len(similar_templates))
-    for key_template in similar_templates:
-        shortest_template = key_template
-        for similar in similar_templates[key_template]:
-            if len(similar) < len(shortest_template):
-                shortest_template = similar
-        filtered_index.append(unique_templates[shortest_template])
-    #print(filtered_index)
-    return filtered_index
+    # similar_templates = {}
+    # unique_templates = {}
+    # filtered_index = []
+    # for sentence in index:
+    #     orig_sentence = sentence["sentence"]
+    #     if sentence['e1'][0] < sentence['e2'][0]:
+    #         subject_object_template = orig_sentence[:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:]
+    #     else:
+    #         subject_object_template = orig_sentence[:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:]
+    #     if subject_object_template not in unique_templates:
+    #         #if not re.match(".*[0-9][0-9][0-9][0-9].*", subject_object_template):
+    #         unique_templates[subject_object_template] = sentence
+    #
+    # for template in unique_templates:
+    #     find_suitable_key_template = False
+    #     for key_template in similar_templates:
+    #         if find_suitable_key_template == True:
+    #             break
+    #         elif similar_string(key_template, template) > 0.8:
+    #             find_suitable_key_template = True
+    #             similar_templates[key_template].append(template)
+    #         else:
+    #             for similar_template in similar_templates[key_template]:
+    #                 if similar_string(similar_template, template) > 0.8:
+    #                     find_suitable_key_template = True
+    #                     similar_templates[key_template].append(template)
+    #                     break
+    #     if find_suitable_key_template == False:
+    #         similar_templates[template] = []
+    #
+    # #for sent in similar_templates:
+    # #    print("{} --> {}\n".format(sent, similar_templates[sent]))
+    # #print(len(index))
+    # #print(len(similar_templates))
+    # for key_template in similar_templates:
+    #     shortest_template = key_template
+    #     for similar in similar_templates[key_template]:
+    #         if len(similar) < len(shortest_template):
+    #             shortest_template = similar
+    #     filtered_index.append(unique_templates[shortest_template])
+    # #print(filtered_index)
+    #return filtered_index
+    return index
 
 _end = '_end_'
 def make_trie(words):
@@ -359,13 +362,27 @@ if __name__ == '__main__':
             models[lm] = dill.load(lm_build_file)
     label2Entities, entity2Labels = get_entity_labels_files('/home/kalo/conferences/iswc2020/data/label2entity.json','/home/kalo/conferences/iswc2020/data/entity2label.json')
     entity_trie = make_trie(label2Entities.keys())
+    entities = get_entitis_file('/home/kalo/conferences/iswc2020/data/missing_data.nt')
+
+
     print("read entity dictionaries and built trie")
-    props = ['P19', 'P20', 'P279', 'P37', 'P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101', 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412', 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P36', 'P740', 'P361']
+    #props = ['P19', 'P20', 'P279', 'P37', 'P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101', 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412', 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P740', 'P361']
+   # props = ['P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101',
+            # 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412',
+            # 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001',
+            # 'P31', 'P495', 'P159', 'P740', 'P361']
     #props = [ 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412',
             # 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001',
             # 'P31', 'P495', 'P159', 'P36', 'P740', 'P361']
-    #props = ['P37']
+    props = ['P36']
+
+    index = index_sentences("/home/kalo/TREx", entities, props,
+                            entity2Labels)
+    print("found template sentences")
+
     for prop in props:
+        if prop not in index:
+            continue
         for model_name, model in models.items():
             if os.path.exists("data/{}_data".format(prop)):
                 with open("data/{}_data".format(prop), 'rb') as prop_data_file:
@@ -373,20 +390,13 @@ if __name__ == '__main__':
                     print("read prop data file")
                     print('Found {} entity pairs for the relation.'.format(len(prop_data["ent"])))
             else:
-                #entities, entity2Labels, label2Entities = get_entities_db("http://www.wikidata.org/prop/direct/{}".format(prop))
-                entities = get_entitis_file('/home/kalo/conferences/iswc2020/data/missing_data.nt')
 
-
-
-                print('Found {} entity pairs for the relation.'.format(len(entities[prop])))
-                index = index_sentences("/home/kalo/TREx", entities[prop], "http://www.wikidata.org/prop/direct/{}".format(prop), entity2Labels)
-                print("found template sentences")
                 # with open("data/{}_data".format(prop), 'wb') as prop_data_file:
                 prop_data = {}
                 prop_data["ent"] = entities[prop]
                 prop_data["ent2Label"] = entity2Labels
                 prop_data["label2ent"] = label2Entities
-                prop_data["index"] = index
+                prop_data["index"] = index[prop]
                 prop_data['trie'] = entity_trie
                 #     dill.dump(prop_data, prop_data_file)
 
@@ -401,17 +411,31 @@ if __name__ == '__main__':
                 o_labels.add(entity2Labels[o][0])
 
 
-            print("starting to rank sentences")
+            print("starting to rank sentences for property {}".format(prop))
+            #first filter by ranking method2
             for sentence in filtered_index:
                 score = rank_sentences_2(model, sentence, prop_data["ent"] , prop_data["ent2Label"], prop_data["trie"], s_labels, o_labels)
+                #score = rank_sentences_1(model, sentence, prop_data["ent"], prop_data["ent2Label"], prop_data["trie"])
                 orig_sentence = sentence["sentence"]
-                if sentence['e1'][0] < sentence['e2'][0]:
-                    subject_object_template = orig_sentence[:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:]
-                else:
-                    subject_object_template = orig_sentence[:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:]
-                results[subject_object_template] = score
-
+                results[orig_sentence] = score
             sorted_results = {k: v for k, v in sorted(results.items(), reverse=True, key=lambda item: item[1])}
+
+            #rank topk by ranking method 1
+            top_k = 100
+            top_templates = dict(islice(sorted_results.items(), top_k))
+            randomEntities = random.sample(prop_data["ent"], 200)
+            for sentence in filtered_index:
+                if sentence['sentence'] in top_templates:
+                    score = rank_sentences_1(model, sentence, prop_data["ent"], prop_data["ent2Label"], prop_data["trie"],randomEntities)
+                    orig_sentence = sentence["sentence"]
+
+                    if sentence['e1'][0] < sentence['e2'][0]:
+                        subject_object_template = orig_sentence[:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:]
+                    else:
+                        subject_object_template = orig_sentence[:sentence['e2'][0]] + "[O]" + orig_sentence[sentence['e2'][1]:sentence['e1'][0]] + "[S]" + orig_sentence[sentence['e1'][1]:]
+                    results[subject_object_template] = score
+            sorted_results = {k: v for k, v in sorted(results.items(), reverse=True, key=lambda item: item[1])}
+
 
         #TODO: check templates.json before the template mining process
             if os.path.exists("templates.json"):
