@@ -577,7 +577,7 @@ def read_dataset_files(dictio_config):
             dictio_wikidata_objects[prop][subj]["complete"].append(obj)
     wikidata_gold_file.close()
 
-    wikidata_missing_tripels = open(dictio_config["wikidata_missing_tripel_path"], "r")
+    wikidata_missing_tripels = open(dictio_config["wikidata_missing_tripel_path"]["new"], "r")
     for line in wikidata_missing_tripels:
         tripel = (line.replace("\n", "")).split(" ")
         subj = str(tripel[0]).split('/')[-1].replace('>', "")
@@ -736,7 +736,7 @@ if __name__ == '__main__':
     #evaluation 1
     parameter = {}
     parameter["wikidata_incomplete"] = "random_incomplete"
-    parameter["queries_path"] = dictio_config["queries_path"]
+    parameter["queries_path"] = dictio_config["queries_path"]["new"]
     parameter["lm"] = "bert"
     parameter["mc"] = [-7]
     parameter["mr"] = 1000
@@ -794,10 +794,10 @@ if __name__ == '__main__':
     parameter["trm"] = "max"
     parameter["apc"] = False
     parameter["ps"] = 1
-    #if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
-    #    evaluations.append(parameter)
-    #else:
-    #    print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
     #evaluation 4
     parameter = {}
@@ -816,10 +816,10 @@ if __name__ == '__main__':
     parameter["trm"] = "max"
     parameter["apc"] = False
     parameter["ps"] = 1
-    #if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
-    #    evaluations.append(parameter)
-    #else:
-    #    print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
     runtime = []
     for parameter in evaluations:
