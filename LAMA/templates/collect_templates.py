@@ -81,7 +81,7 @@ def index_sentences(input_path, entityPairDict, props, entityLabels):
                     sent_ents = get_ents_in_sent(sent_b, abstract["entities"])
 
                     # index sentences containing entity pairs (e1,e2) from input relation r
-                    if len(sent_ents) == 2:
+                    if len(sent_ents) >= 2:
                         for e1 in sent_ents:
                             for e2 in sent_ents:
                                 if e1 != e2:
@@ -149,10 +149,10 @@ def index_sentences(input_path, entityPairDict, props, entityLabels):
                                                                 index[prop].append(entry)
                                                             else:
                                                                 index[prop] = [entry]
+
                                     except KeyError:
                                         print("WARNING: KeyError")
                                         continue
-
                 # done for file fn
     return index
 
@@ -297,8 +297,40 @@ from difflib import SequenceMatcher
 def similar_string(a, b):
     return SequenceMatcher(None, a, b).ratio()
 
-import re
+from SetSimilaritySearch import all_pairs
+import networkx as nx
+
 def find_similar_sentences(index, entity2Labels):
+    sentence_list = []
+    for index_entry in index:
+        sentence_list.append(index_entry['sentence'].split())
+    print(sentence_list)
+    # all_pairs returns an iterable of tuples.
+    pairs = all_pairs(sentence_list, similarity_func_name="jaccard",
+                      similarity_threshold=0.6)
+
+    G = nx.Graph()
+    duplicate_sentences = set()
+    non_duplicate_sentence_list = set()
+
+    for p in pairs:
+        G.add_edge(p[0], p[1], weight=p[2])
+        duplicate_sentences.add(p[0])
+        duplicate_sentences.add(p[1])
+    for id, sentence in enumerate(sentence_list):
+        if id not in duplicate_sentences:
+            non_duplicate_sentence_list.add(id)
+    components = nx.community.greedy_modularity_communities(G)
+    good_sentences = set()
+    for c in components:
+        good_sentences.add(sorted(c)[0])
+
+    output_index = []
+    i = 0
+    for index_entry in index:
+        if i in good_sentences or i in non_duplicate_sentence_list:
+            output_index.append(index_entry)
+        i += 1
     # similar_templates = {}
     # unique_templates = {}
     # filtered_index = []
@@ -341,7 +373,7 @@ def find_similar_sentences(index, entity2Labels):
     #     filtered_index.append(unique_templates[shortest_template])
     # #print(filtered_index)
     #return filtered_index
-    return index
+    return output_index
 
 _end = '_end_'
 def make_trie(words):
@@ -362,11 +394,11 @@ if __name__ == '__main__':
             models[lm] = dill.load(lm_build_file)
     label2Entities, entity2Labels = get_entity_labels_files('/home/kalo/conferences/iswc2020/data/label2entity.json','/home/kalo/conferences/iswc2020/data/entity2label.json')
     entity_trie = make_trie(label2Entities.keys())
-    entities = get_entitis_file('/home/kalo/conferences/iswc2020/data/missing_data.nt')
+    entities = get_entitis_file('/home/kalo/conferences/iswc2020/data/missing_data.new.nt')
 
 
     print("read entity dictionaries and built trie")
-    #props = ['P19', 'P20', 'P279', 'P37', 'P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101', 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412', 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P740', 'P361']
+    props = ['P19', 'P20', 'P279', 'P37', 'P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101', 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412', 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P740', 'P361']
    # props = ['P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101',
             # 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412',
             # 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001',
@@ -374,7 +406,7 @@ if __name__ == '__main__':
     #props = [ 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412',
             # 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001',
             # 'P31', 'P495', 'P159', 'P36', 'P740', 'P361']
-    props = ['P36']
+    #props = ['P36']
 
     index = index_sentences("/home/kalo/TREx", entities, props,
                             entity2Labels)
