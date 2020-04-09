@@ -302,12 +302,26 @@ import networkx as nx
 
 def find_similar_sentences(index, entity2Labels):
     sentence_list = []
+
+
     for index_entry in index:
-        sentence_list.append(index_entry['sentence'].split())
+        orig_sentence = index_entry["sentence"]
+
+        if index_entry['e1'][0] < index_entry['e2'][0]:
+            subject_object_template = orig_sentence[:index_entry['e1'][0]] + "[S]" + orig_sentence[
+                                                                                  index_entry['e1'][1]:index_entry['e2'][
+                                                                                      0]] + "[O]" + orig_sentence[
+                                                                                                    index_entry['e2'][1]:]
+        else:
+            subject_object_template = orig_sentence[:index_entry['e2'][0]] + "[O]" + orig_sentence[
+                                                                                  index_entry['e2'][1]:index_entry['e1'][
+                                                                                      0]] + "[S]" + orig_sentence[
+                                                                                     index_entry['e1'][1]:]
+        sentence_list.append(subject_object_template.split())
     print(sentence_list)
     # all_pairs returns an iterable of tuples.
     pairs = all_pairs(sentence_list, similarity_func_name="jaccard",
-                      similarity_threshold=0.6)
+                      similarity_threshold=0.7)
 
     G = nx.Graph()
     duplicate_sentences = set()
@@ -432,7 +446,7 @@ if __name__ == '__main__':
                 prop_data['trie'] = entity_trie
                 #     dill.dump(prop_data, prop_data_file)
 
-            results = {}
+
             filtered_index = find_similar_sentences(prop_data["index"], prop_data["ent2Label"])
             # compute the overlap with correct labels
             s_labels = set()
@@ -442,17 +456,18 @@ if __name__ == '__main__':
                 s_labels.add(entity2Labels[s][0])
                 o_labels.add(entity2Labels[o][0])
 
-
+            intermediate_results = {}
             print("starting to rank sentences for property {}".format(prop))
             #first filter by ranking method2
             for sentence in filtered_index:
                 score = rank_sentences_2(model, sentence, prop_data["ent"] , prop_data["ent2Label"], prop_data["trie"], s_labels, o_labels)
                 #score = rank_sentences_1(model, sentence, prop_data["ent"], prop_data["ent2Label"], prop_data["trie"])
                 orig_sentence = sentence["sentence"]
-                results[orig_sentence] = score
-            sorted_results = {k: v for k, v in sorted(results.items(), reverse=True, key=lambda item: item[1])}
+                intermediate_results[orig_sentence] = score
+            sorted_results = {k: v for k, v in sorted(intermediate_results.items(), reverse=True, key=lambda item: item[1])}
 
             #rank topk by ranking method 1
+            results = {}
             top_k = 100
             top_templates = dict(islice(sorted_results.items(), top_k))
             randomEntities = random.sample(prop_data["ent"], 200)
