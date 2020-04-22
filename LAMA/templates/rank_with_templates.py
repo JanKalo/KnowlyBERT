@@ -176,8 +176,8 @@ import os
 if __name__ == '__main__':
 
     lm = "bert"
-    prop = "P37"
-    entities = ["Q183","Q414", "Q851", "Q38", "Q258", "Q114", "Q155", "Q16", "Q35", "Q39"]
+    prop = "P69"
+    entities = ["Q17003309"]
     if os.path.exists("/data/fichtel/lm_builds/model_{}".format(lm)):
         with open("/data/fichtel/lm_builds/model_{}".format(lm), 'rb') as config_dictionary_file:
             bert = dill.load(config_dictionary_file)
@@ -189,5 +189,5 @@ if __name__ == '__main__':
             template = readTemplates()
             for entity in entities:
                 # start ranking
-                rank = get_ranking(entity2Labels[entity][0] ,prop,"?", bert, entity_trie, template, 10)
+                rank = get_ranking(entity2Labels[entity][0] ,prop,"?", bert, entity_trie, template, 5, trm="max")
                 print(rank)

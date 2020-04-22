@@ -58,7 +58,7 @@ def get_ents_in_sent(
 
 def index_sentences(input_path, entityPairDict, props, entityLabels):
 
-    maxLength = 100
+    maxLength = 50
     index = {}
     number_of_files = len(os.listdir(input_path))
     current_file_no = 0
@@ -91,7 +91,7 @@ def index_sentences(input_path, entityPairDict, props, entityLabels):
                                         #check for sentence whether it belongs to one of the input relations in props
                                         for prop in props:
                                             entityPairs = entityPairDict[prop]
-                                            if (e1['uri'],e2['uri']) in entityPairs and prop in sent_rels:
+                                            if (e1['uri'],e2['uri']) in entityPairs:
                                                 e1_too_short_surfaceform = False
 
                                                 if e1['boundaries'][1] - e1['boundaries'][0] != len(entityLabels[e1['uri']][0]):
@@ -412,7 +412,7 @@ if __name__ == '__main__':
 
 
     print("read entity dictionaries and built trie")
-    props = ['P19', 'P20', 'P279', 'P37', 'P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101', 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412', 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P740', 'P361']
+    props = ['P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412', 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P740', 'P361']
    # props = ['P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101',
             # 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412',
             # 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001',

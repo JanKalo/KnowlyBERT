@@ -115,6 +115,7 @@ def get_results(model, sentence):
             sentence = sentence.replace("[MASK]","[MASK] [MASK]", 1)
         #print(sentence)
         sentences = [sentence]
+
         original_log_probs_list, [token_ids], [masked_indices] = model.get_batch_generation([sentences], try_cuda=True)
         index_list = None
         filtered_log_probs_list = original_log_probs_list
@@ -122,15 +123,17 @@ def get_results(model, sentence):
         # build topk lists for this template and safe in ret1 and ret2
         if masked_indices and len(masked_indices) > 0:
             results = evaluation_metrics.get_ranking(filtered_log_probs_list[0], masked_indices, model.vocab,
-                                                     index_list=index_list)
-
-        result_list.append(results)
+                                                         index_list=index_list)
+            result_list.append(results)
     return result_list
 
 def get_multi_token_results(sentence, model, trie):
     #TODO: Not Sorted
-    result_list = get_results(model, sentence)
-    label_results = join_result_lists(result_list, trie)
+    try:
+        result_list = get_results(model, sentence)
+        label_results = join_result_lists(result_list, trie)
+    except ValueError:
+        label_results = []
     #results = find_entities(label_results, entity_labels)
     return label_results
 
