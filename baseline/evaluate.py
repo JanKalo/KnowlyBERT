@@ -105,6 +105,8 @@ def evaluation_per_query(
     # combine each query result with its corresponding missing_data result
     # if missing_data is given
     per_query = {}
+    avg_prec = 0.0
+    avg_rec = 0.0
     for query_result in gold_dataset:
         per_query[query_result] = {}
 
@@ -132,8 +134,16 @@ def evaluation_per_query(
                 if missing_data is not None else set()
                 )
 
+        # sum up precision & recall values to get the average later
+        avg_prec += per_query[query_result]["precision"]
+        avg_rec += per_query[query_result]["recall"]
+
+    # get average precision & recall
+    avg_prec /= len(per_query.keys())
+    avg_rec /= len(per_query.keys())
+
     # done
-    return per_query
+    return per_query, avg_prec, avg_rec
 
 
 def evaluation_per_relation(
@@ -150,6 +160,8 @@ def evaluation_per_relation(
     # combine each query result with its corresponding missing_data result
     # if missing_data is given
     per_relation = {}
+    avg_prec = 0.0
+    avg_rec = 0.0
     for prop in query_propmap:
         per_relation[prop] = {}
         per_relation[prop]["precision"] = 0.0
@@ -198,8 +210,16 @@ def evaluation_per_relation(
             per_relation[prop]["precision"] /= num_nonempty_query_results
         per_relation[prop]["recall"] /= len(query_propmap[prop])
 
+        # sum up precision & recall values to get the average later
+        avg_prec += per_relation[prop]["precision"]
+        avg_rec += per_relation[prop]["recall"]
+
+    # get average precision & recall
+    avg_prec /= len(per_relation.keys())
+    avg_rec /= len(per_relation.keys())
+
     # done
-    return per_relation
+    return per_relation, avg_prec, avg_rec
 
 
 def plot_evaluation(
@@ -335,18 +355,29 @@ def evaluate(
     for dataset in query_results_map:
         # evaluate
         query_results = query_results_map[dataset]
-        evaluation[dataset] = {}
-        evaluation[dataset]["per_query"] = evaluation_per_query(
-                gold_dataset,
-                query_results,
-                missing_data
+        per_query, per_query_avg_prec, per_query_avg_rec = (
+                evaluation_per_query(
+                    gold_dataset,
+                    query_results,
+                    missing_data
+                    )
                 )
-        evaluation[dataset]["per_relation"] = evaluation_per_relation(
-                gold_dataset,
-                query_propmap,
-                query_results,
-                missing_data
+        per_relation, per_relation_avg_prec, per_relation_avg_rec = (
+                evaluation_per_relation(
+                    gold_dataset,
+                    query_propmap,
+                    query_results,
+                    missing_data
+                    )
                 )
+        evaluation[dataset] = {
+                "per_query": per_query,
+                "per_query_avg_prec": per_query_avg_prec,
+                "per_query_avg_rec": per_query_avg_rec,
+                "per_relation": per_relation,
+                "per_relation_avg_prec": per_relation_avg_prec,
+                "per_relation_avg_rec": per_relation_avg_rec
+                }
 
     # save evaluation
     print("INFO: saving {0} ...".format(output_fn_prefix))
