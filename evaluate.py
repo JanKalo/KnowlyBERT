@@ -55,14 +55,15 @@ def evaluate(data_dictio, output_hybrid, i):
         count_possible_result_LM_incorrect_ID = 0
         for data in data_output_hybrid:
             props_at_least_one_correct = {}
-            prop = data["prop"]
+            prop = data["tripel"][1]
             if prop in dictio_props:
                 count = dictio_props[prop]
                 dictio_props[prop] = count + 1
             else:
                 dictio_props[prop] = 1
-        for nr, data in enumerate(data_output_hybrid):
-            prop = data["prop"]
+        for data in data_output_hybrid:
+            string_tripel = "{}{}{}".format(data["tripel"][0], data["tripel"][1], data["tripel"][2])
+            prop = data["tripel"][1]
             dictio_label_possible_entities = data["label_possible_entities"]
             if dictio_label_possible_entities != {}:
                 if prop in dictio_prop_label_possible_entities:
@@ -96,6 +97,7 @@ def evaluate(data_dictio, output_hybrid, i):
                 count_no_entry_o_r = count_no_entry_o_r +1
 
             results_LM = data["LM"]
+            nr = data_dictio["query_id"][string_tripel]
             dictio_querynr_lm_result[nr] = list(results_LM.keys())
             already_existing = data["already_existing"]
             if already_existing:
@@ -372,9 +374,14 @@ def write_into_files(i, date_time, folder, mc, cep, tmc, tmp, file_evaluation, h
     for log in list_hybrid_log:
         actu_list_hybrid_log.append(log[i])
     dictio_querynr_lm_result, popularity_scores, string_evaluation, string_eval_props, list_query_assign, perfect_queries, count_perfect_queries, percentage_perfect_queries, bad_queries, count_bad_queries, percentage_bad_queries, props_no_result, count_no_result_queries, percentage_no_result, data_amount, missing, dictio_prop_label_possible_entities = evaluate(data, hybrid_output, i)
-    file_phil = open("evaluation/{}/phil/{}_tp{}_ts{}_trm{}_tmc{}_ps{}.json".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_",""), parameter["ts"], parameter["trm"], tmc, parameter["ps"]), "w")
-    json.dump(dictio_querynr_lm_result, file_phil)
-    file_phil.close()
+    file_id_lmresult = open("evaluation/{}/phil/{}_tp{}_ts{}_trm{}_tmc{}_ps{}.json".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], tmc, parameter["ps"]), "w")
+    json.dump(dictio_querynr_lm_result, file_id_lmresult)
+    file_id_lmresult.close()
+    file_query_groups = open("evaluation/{}/phil/{}_query_groups.json".format(folder, date_time), "w")
+    dictio_query_group = {}
+    dictio_query_group["normal"] = list(dictio_querynr_lm_result.keys())
+    json.dump(dictio_query_group, file_query_groups)
+    file_query_groups.close()
     if missing:
         file_missing = open("evaluation/{}/dictio_missing".format(folder), "w")
         file_missing.write("Results of LM, which are not in dictionary, but would be correct\n")
@@ -461,9 +468,9 @@ def handeling_output(data, parameter, hybrid_output, list_hybrid_log, list_error
     if hybrid_output != []:
         if len(parameter["mc"]) == 1 and len(parameter["cep"]) == 1 and len(parameter["tmc"]) == 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
-            folder = "{}_tp{}_ts{}_trm{}_ps{}".format(date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_",""), parameter["ts"], parameter["trm"], parameter["ps"])
+            folder = "{}_tp{}_ts{}_trm{}_ps{}".format(date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"])
             os.mkdir("evaluation/{}".format(folder))
-            file_evaluation = open("evaluation/{}/eval_{}_tp{}_ts{}_trm{}_ps{}.txt".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_",""), parameter["ts"], parameter["trm"], parameter["ps"]), "w")
+            file_evaluation = open("evaluation/{}/eval_{}_tp{}_ts{}_trm{}_ps{}.txt".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"]), "w")
             
             file_evaluation.write(parameter["queries_path"]+"\n\n")
             os.mkdir("evaluation/{}/phil".format(folder))
@@ -475,9 +482,9 @@ def handeling_output(data, parameter, hybrid_output, list_hybrid_log, list_error
             file_evaluation.close()
         elif len(parameter["mc"]) > 1 and len(parameter["cep"]) == 1 and len(parameter["tmc"]) == 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
-            folder = "{}_mc_tp{}_ts{}_trm{}_ps{}".format(date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_",""), parameter["ts"], parameter["trm"], parameter["ps"])
+            folder = "{}_mc_tp{}_ts{}_trm{}_ps{}".format(date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"])
             os.mkdir("evaluation/{}".format(folder))
-            file_evaluation = open("evaluation/{}/eval_mc_{}_tp{}_ts{}_trm{}_ps{}.txt".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_",""), parameter["ts"], parameter["trm"], parameter["ps"]), "w")
+            file_evaluation = open("evaluation/{}/eval_mc_{}_tp{}_ts{}_trm{}_ps{}.txt".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"]), "w")
             
             file_evaluation.write("mc "+str(parameter["mc"])+"\n")
             file_evaluation.write(parameter["queries_path"]+"\n\n")
@@ -491,9 +498,9 @@ def handeling_output(data, parameter, hybrid_output, list_hybrid_log, list_error
             file_evaluation.close()
         elif len(parameter["mc"]) == 1 and len(parameter["cep"]) > 1 and len(parameter["tmc"]) == 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
-            folder = "{}_cep_tp{}_ts{}_trm{}_ps{}".format(date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_",""), parameter["ts"], parameter["trm"], parameter["ps"])
+            folder = "{}_cep_tp{}_ts{}_trm{}_ps{}".format(date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"])
             os.mkdir("evaluation/{}".format(folder))
-            file_evaluation = open("evaluation/{}/eval_cep_{}_tp{}_ts{}_trm{}_ps{}.txt".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_",""), parameter["ts"], parameter["trm"], parameter["ps"]), "w")
+            file_evaluation = open("evaluation/{}/eval_cep_{}_tp{}_ts{}_trm{}_ps{}.txt".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"]), "w")
             
             file_evaluation.write("cep "+str(parameter["cep"])+"\n")
             file_evaluation.write(parameter["queries_path"]+"\n\n")
@@ -507,9 +514,9 @@ def handeling_output(data, parameter, hybrid_output, list_hybrid_log, list_error
             file_evaluation.close()
         elif len(parameter["mc"]) == 1 and len(parameter["cep"]) == 1 and len(parameter["tmc"]) > 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
-            folder = "{}_tmc_tp{}_ts{}_trm{}_ps{}".format(date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_",""), parameter["ts"], parameter["trm"], parameter["ps"])
+            folder = "{}_tmc_tp{}_ts{}_trm{}_ps{}".format(date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"])
             os.mkdir("evaluation/{}".format(folder))
-            file_evaluation = open("evaluation/{}/eval_tmc_{}_tp{}_ts{}_trm{}_ps{}.txt".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_",""), parameter["ts"], parameter["trm"], parameter["ps"]), "w")
+            file_evaluation = open("evaluation/{}/eval_tmc_{}_tp{}_ts{}_trm{}_ps{}.txt".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"]), "w")
             
             file_evaluation.write("tmc "+str(parameter["tmc"])+"\n")
             file_evaluation.write(parameter["queries_path"]+"\n\n")
@@ -523,9 +530,9 @@ def handeling_output(data, parameter, hybrid_output, list_hybrid_log, list_error
             file_evaluation.close()
         elif len(parameter["mc"]) == 1 and len(parameter["cep"]) == 1 and len(parameter["tmc"]) == 1 and len(parameter["tmp"]) > 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
-            folder = "{}_tmp_tp{}_ts{}_trm{}_ps{}".format(date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_",""), parameter["ts"], parameter["trm"], parameter["ps"])
+            folder = "{}_tmp_tp{}_ts{}_trm{}_ps{}".format(date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"])
             os.mkdir("evaluation/{}".format(folder))
-            file_evaluation = open("evaluation/{}/eval_tmp_{}_tp{}_ts{}_trm{}_ps{}.txt".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_",""), parameter["ts"], parameter["trm"], parameter["ps"]), "w")
+            file_evaluation = open("evaluation/{}/eval_tmp_{}_tp{}_ts{}_trm{}_ps{}.txt".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"]), "w")
             
             file_evaluation.write("tmp "+str(parameter["tmp"])+"\n")
             file_evaluation.write(parameter["queries_path"]+"\n\n")
@@ -586,6 +593,7 @@ def read_dataset_files(dictio_config):
 
             dictio_wikidata_objects[prop][subj]["complete"].append(obj)
     wikidata_gold_file.close()
+    del wikidata_gold_file
 
     wikidata_missing_tripels = open(dictio_config["wikidata_missing_tripel_path"]["new"], "r")
     for line in wikidata_missing_tripels:
@@ -605,6 +613,7 @@ def read_dataset_files(dictio_config):
             if subj in dictio_wikidata_objects[prop]:
                 dictio_wikidata_objects[prop][subj]["random_incomplete"].append(obj)
     wikidata_missing_tripels.close()
+    del wikidata_missing_tripels
 
     #file_objects = open("{}_dictio_wikidata_objects.json".format(actu_prop), "w")
     #temp = {}
@@ -637,8 +646,8 @@ def read_label_id_file(dictio_config):
 def read_id_label_file(dictio_config):
     #parsing the ID-label-dictionary
     dictio_id_label = {}
-    #id_label_file = open(dictio_config["id_label_path"], "r")
-    id_label_file = open(dictio_config["id_label_rdfLabel_path"], "r")
+    id_label_file = open(dictio_config["id_label_path"], "r")
+    #id_label_file = open(dictio_config["id_label_rdfLabel_path"], "r")
     dictio_id_label = json.load(id_label_file)
     id_label_file.close()
     return dictio_id_label
@@ -702,6 +711,14 @@ def make_trie(words):
         current_dict[_end] = _end
     return root
 
+def read_query_id_file(dictio_config):
+    #read json file for dictio of query and ID for Phil ;)
+    dictio_query_id = {}
+    file_query_id = open(dictio_config["query_id_path"]["new"], "r")
+    dictio_query_id = json.load(file_query_id)
+    file_query_id.close()
+    return dictio_query_id
+
 if __name__ == '__main__':
     dictio_config = read_config_file()
     dictio_wikidata_subjects, dictio_wikidata_objects = read_dataset_files(dictio_config)
@@ -711,6 +728,7 @@ if __name__ == '__main__':
     #dictio_prop_probdistribution = read_cardinality_estimation_file(dictio_config)
     dictio_prop_classes = read_prop_classes_file(dictio_config)
     dictio_entity_popularity = read_entity_popularity_file(dictio_config)
+    dictio_query_id = read_query_id_file(dictio_config)
 
     data = {}
     data["config"] = dictio_config
@@ -724,6 +742,7 @@ if __name__ == '__main__':
     #data["prop_probdistribution"] = dictio_prop_probdistribution
     data["prop_classes"] = dictio_prop_classes
     data["entity_popularity"] = dictio_entity_popularity
+    data["query_id"] = dictio_query_id
     print("read all data files")
 
     evaluations = []
@@ -752,11 +771,11 @@ if __name__ == '__main__':
     parameter["mr"] = 1000
     parameter["ces"] = -1
     parameter["cep"] = [-1]
-    parameter["tmc"] = [-0.01, -0.1, -0.5, -1, -1.4, -1.5, -2, -3, -4, -100]
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100]
     parameter["tmn"] = 10
     parameter["tmp"] = [0.5]
-    parameter["tp"] = dictio_config["template_path"]["LAMA"]
-    parameter["ts"] = 1
+    parameter["tp"] = dictio_config["template_path"]["ranking2_1"]
+    parameter["ts"] = 5
     parameter["trm"] = "max"
     parameter["apc"] = False
     parameter["ps"] = 1
@@ -774,20 +793,20 @@ if __name__ == '__main__':
     parameter["mr"] = 1000
     parameter["ces"] = -1
     parameter["cep"] = [-1]
-    parameter["tmc"] = [-0.01, -0.1, -0.5, -1, -1.4, -1.5, -2, -3, -4, -100]
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100]
     parameter["tmn"] = 10
     parameter["tmp"] = [0.5]
-    parameter["tp"] = dictio_config["template_path"]["ranking2"]
+    parameter["tp"] = dictio_config["template_path"]["ranking2_1"]
     parameter["ts"] = 5
-    parameter["trm"] = "max"
+    parameter["trm"] = "avg"
     parameter["apc"] = False
-    parameter["ps"] = 10
+    parameter["ps"] = 1
     if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
         print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
-    #evaluation 2
+    #evaluation 3
     parameter = {}
     parameter["wikidata_incomplete"] = "random_incomplete"
     parameter["queries_path"] = dictio_config["queries_path"]["new"]
@@ -796,14 +815,14 @@ if __name__ == '__main__':
     parameter["mr"] = 1000
     parameter["ces"] = -1
     parameter["cep"] = [-1]
-    parameter["tmc"] = [-0.01, -0.1, -0.5, -1, -1.4, -1.5, -2, -3, -4, -100]
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100]
     parameter["tmn"] = 10
     parameter["tmp"] = [0.5]
-    parameter["tp"] = dictio_config["template_path"]["ranking2"]
-    parameter["ts"] = 5
+    parameter["tp"] = dictio_config["template_path"]["ranking2_1"]
+    parameter["ts"] = 1
     parameter["trm"] = "max"
     parameter["apc"] = False
-    parameter["ps"] = 100
+    parameter["ps"] = 1
     if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -818,18 +837,62 @@ if __name__ == '__main__':
     parameter["mr"] = 1000
     parameter["ces"] = -1
     parameter["cep"] = [-1]
-    parameter["tmc"] = [-0.01, -0.1, -0.5, -1, -1.4, -1.5, -2, -3, -4, -100]
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100]
     parameter["tmn"] = 10
     parameter["tmp"] = [0.5]
-    parameter["tp"] = dictio_config["template_path"]["ranking2"]
+    parameter["tp"] = dictio_config["template_path"]["ranking2_1"]
     parameter["ts"] = 10
     parameter["trm"] = "max"
     parameter["apc"] = False
     parameter["ps"] = 1
-    #if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
-    #    evaluations.append(parameter)
-    #else:
-    #    print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+
+    #evaluation 5
+    parameter = {}
+    parameter["wikidata_incomplete"] = "random_incomplete"
+    parameter["queries_path"] = dictio_config["queries_path"]["new"]
+    parameter["lm"] = "bert"
+    parameter["mc"] = [-7]
+    parameter["mr"] = 1000
+    parameter["ces"] = -1
+    parameter["cep"] = [-1]
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100]
+    parameter["tmn"] = 10
+    parameter["tmp"] = [0.5]
+    parameter["tp"] = dictio_config["template_path"]["ranking2_1"]
+    parameter["ts"] = 10
+    parameter["trm"] = "avg"
+    parameter["apc"] = False
+    parameter["ps"] = 1
+    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+
+    #evaluation 6
+    parameter = {}
+    parameter["wikidata_incomplete"] = "random_incomplete"
+    parameter["queries_path"] = dictio_config["queries_path"]["new"]
+    parameter["lm"] = "bert"
+    parameter["mc"] = [-7]
+    parameter["mr"] = 1000
+    parameter["ces"] = -1
+    parameter["cep"] = [-1]
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100]
+    parameter["tmn"] = 10
+    parameter["tmp"] = [0.5]
+    parameter["tp"] = dictio_config["template_path"]["ranking2_1"]
+    parameter["ts"] = 100
+    parameter["trm"] = "max"
+    parameter["apc"] = False
+    parameter["ps"] = 1
+    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
     runtime = []
     for parameter in evaluations:
@@ -841,5 +904,3 @@ if __name__ == '__main__':
         print('Time: {}min'.format((stop - start)/60))
         runtime.append(str((stop - start)/60)+"min")
     print(runtime)
-                
-        
