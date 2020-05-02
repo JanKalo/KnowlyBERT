@@ -163,11 +163,8 @@ def evaluation_per_relation(
     avg_prec = 0.0
     avg_rec = 0.0
     for prop in query_propmap:
-        per_relation[prop] = {}
-        per_relation[prop]["precision"] = 0.0
-        per_relation[prop]["recall"] = 0.0
-
         # sum up values for each query result
+        num_queries = 0
         num_nonempty_query_results = 0
         for query_result in query_propmap[prop]:
             # skip this result if it is not in results
@@ -180,6 +177,14 @@ def evaluation_per_relation(
                     query_result not in query_results
                     ):
                 continue
+            else:
+                num_queries += 1
+
+            # initialize if not done yet
+            if prop not in per_relation:
+                per_relation[prop] = {}
+                per_relation[prop]["precision"] = 0.0
+                per_relation[prop]["recall"] = 0.0
 
             # union results with missing_data results if given
             test = set.union(
@@ -204,19 +209,22 @@ def evaluation_per_relation(
                     if missing_data is not None else set()
                     )
 
-        # divide by number of query results for current property
-        # to get the AVERAGE precision & recall
-        if num_nonempty_query_results > 0:
-            per_relation[prop]["precision"] /= num_nonempty_query_results
-        per_relation[prop]["recall"] /= len(query_propmap[prop])
+        # only when there were precision / recall values
+        if prop in per_relation:
+            # divide by number of query results for current property
+            # to get the AVERAGE precision & recall
+            if num_nonempty_query_results > 0:
+                per_relation[prop]["precision"] /= num_nonempty_query_results
+            per_relation[prop]["recall"] /= num_queries
 
-        # sum up precision & recall values to get the average later
-        avg_prec += per_relation[prop]["precision"]
-        avg_rec += per_relation[prop]["recall"]
+            # sum up precision & recall values to get the average later
+            avg_prec += per_relation[prop]["precision"]
+            avg_rec += per_relation[prop]["recall"]
 
     # get average precision & recall
-    avg_prec /= len(per_relation.keys())
-    avg_rec /= len(per_relation.keys())
+    if len(per_relation.keys()) > 0:
+        avg_prec /= len(per_relation.keys())
+        avg_rec /= len(per_relation.keys())
 
     # done
     return per_relation, avg_prec, avg_rec
@@ -478,6 +486,7 @@ def main():
         assert len(gold_dataset) == len(query_results_map[dataset])
 
     # evaluate query groups
+    # or evaluate all queries
     if args.query_groups is not None:
         # for each query group one evaluation
         query_groups = load_query_groups(args.query_groups)
@@ -507,15 +516,14 @@ def main():
                     qg_missing_data,
                     "evaluation_{0}".format(query_group)
                     )
-
-    # evaluate also all queries
-    evaluate(
-            query_results_map,
-            query_propmap,
-            gold_dataset,
-            missing_data,
-            "evaluation_all"
-            )
+    else:
+        evaluate(
+                query_results_map,
+                query_propmap,
+                gold_dataset,
+                missing_data,
+                "evaluation_all"
+                )
 
 
 if __name__ == "__main__":
