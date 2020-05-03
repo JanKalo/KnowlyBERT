@@ -391,10 +391,10 @@ def evaluate(
     print("INFO: saving {0} ...".format(output_fn_prefix))
     with open(output_fn_prefix + ".json", "w") as f:
         json.dump(evaluation, f)
-    plot_evaluation(evaluation, output_fn_prefix, "per_query", "precision")
-    plot_evaluation(evaluation, output_fn_prefix, "per_query", "recall")
-    plot_evaluation(evaluation, output_fn_prefix, "per_relation", "precision")
-    plot_evaluation(evaluation, output_fn_prefix, "per_relation", "recall")
+    #plot_evaluation(evaluation, output_fn_prefix, "per_query", "precision")
+    #plot_evaluation(evaluation, output_fn_prefix, "per_query", "recall")
+    #plot_evaluation(evaluation, output_fn_prefix, "per_relation", "precision")
+    #plot_evaluation(evaluation, output_fn_prefix, "per_relation", "recall")
 
 
 def main():
@@ -462,7 +462,7 @@ def main():
     else:
         print("INFO: no query_groups specified, using all as one group.")
     for results_file in args.RESULTS_FILES:
-        if not os.path.isfile(results_file):
+        if not os.path.exists(results_file):
             sys.exit(
                     "ERROR: specified query results '{0}' do not exist"
                     .format(results_file)
@@ -481,9 +481,18 @@ def main():
     assert missing_data is None or len(gold_dataset) == len(missing_data)
 
     # load all query results and assert #queries
-    query_results_map = load_query_results_map(args.RESULTS_FILES)
-    for dataset in query_results_map:
-        assert len(gold_dataset) == len(query_results_map[dataset])
+    results_files = []
+    for entry in args.RESULTS_FILES:
+        # load results file 
+        if "json" in entry:
+            results_files.append(entry)
+        else:
+            path = entry
+            for file in sorted(os.listdir(path)):
+                results_files.append("{}{}".format(path, file))
+    query_results_map = load_query_results_map(results_files)
+    #for dataset in query_results_map:
+    #    assert len(gold_dataset) == len(query_results_map[dataset])
 
     # evaluate query groups
     # or evaluate all queries
