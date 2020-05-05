@@ -107,39 +107,45 @@ def evaluation_per_query(
     per_query = {}
     avg_prec = 0.0
     avg_rec = 0.0
+    num_nonempty_query_results = 0
     for query_result in gold_dataset:
-        per_query[query_result] = {}
-
-        # union results with missing_data results if given
-        test = set.union(
-                query_results[query_result],
-                missing_data[query_result]
-                if missing_data is not None else set()
-                )
-
         # get precision & recall values
+        per_query[query_result] = {}
         if len(query_results[query_result]) > 0:
+            num_nonempty_query_results += 1
+
+            # union results with missing_data results if given
+            test = set.union(
+                    query_results[query_result],
+                    missing_data[query_result]
+                    if missing_data is not None else set()
+                    )
+
+            # calculate if non-empty result set
             per_query[query_result]["precision"] = prec(
                     gold_dataset[query_result],
                     test,
                     missing_data[query_result]
                     if missing_data is not None else set()
                     )
+            per_query[query_result]["recall"] = rec(
+                    gold_dataset[query_result],
+                    test,
+                    missing_data[query_result]
+                    if missing_data is not None else set()
+                    )
+
+            # sum up precision & recall values to get the average later
+            avg_prec += per_query[query_result]["precision"]
+            avg_rec += per_query[query_result]["recall"]
         else:
+            # set both to 0 if empty result
             per_query[query_result]["precision"] = 0.0
-        per_query[query_result]["recall"] = rec(
-                gold_dataset[query_result],
-                test,
-                missing_data[query_result]
-                if missing_data is not None else set()
-                )
+            per_query[query_result]["recall"] = 0.0
 
-        # sum up precision & recall values to get the average later
-        avg_prec += per_query[query_result]["precision"]
-        avg_rec += per_query[query_result]["recall"]
-
-    # get average precision & recall
-    avg_prec /= len(per_query.keys())
+    # get average precision (weighted by #non-empty queries)
+    # and recall (weighted by total queries)
+    avg_prec /= num_nonempty_query_results
     avg_rec /= len(per_query.keys())
 
     # done
@@ -186,28 +192,30 @@ def evaluation_per_relation(
                 per_relation[prop]["precision"] = 0.0
                 per_relation[prop]["recall"] = 0.0
 
-            # union results with missing_data results if given
-            test = set.union(
-                    query_results[query_result],
-                    missing_data[query_result]
-                    if missing_data is not None else set()
-                    )
-
             # sum up precision & recall values
             if len(query_results[query_result]) > 0:
                 num_nonempty_query_results += 1
+
+                # union results with missing_data results if given
+                test = set.union(
+                        query_results[query_result],
+                        missing_data[query_result]
+                        if missing_data is not None else set()
+                        )
+
+                # calculate if non-empty result set
                 per_relation[prop]["precision"] += prec(
                         gold_dataset[query_result],
                         test,
                         missing_data[query_result]
                         if missing_data is not None else set()
                         )
-            per_relation[prop]["recall"] += rec(
-                    gold_dataset[query_result],
-                    test,
-                    missing_data[query_result]
-                    if missing_data is not None else set()
-                    )
+                per_relation[prop]["recall"] += rec(
+                        gold_dataset[query_result],
+                        test,
+                        missing_data[query_result]
+                        if missing_data is not None else set()
+                        )
 
         # only when there were precision / recall values
         if prop in per_relation:
@@ -483,7 +491,7 @@ def main():
     # load all query results and assert #queries
     results_files = []
     for entry in args.RESULTS_FILES:
-        # load results file 
+        # load results file
         if os.path.isfile(entry):
             results_files.append(entry)
         else:
