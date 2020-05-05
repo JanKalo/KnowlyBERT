@@ -33,7 +33,7 @@ def find_class(id, data):
             #print(id, classes)
             return classes
     except KeyError:
-        return "WARNING: No classes have been found, id: {}".format(id)
+        return "[WARNING]: No classes have been found, id: {}".format(id)
 
 #function to resolve an id (i.e. Q567) into label (i.e. Angela Merkel)
 def find_label(id, data):
@@ -44,7 +44,7 @@ def find_label(id, data):
         if id in dictio_id_label:
             return dictio_id_label[id][0]
         else:
-            return "WARNING: No label have been found, id: {}".format(id)
+            return "[WARNING]: No label have been found, id: {}".format(id)
 
 #function to create output with all data of each query --> return value
 def get_output_data(tripel, results_KG_complete, results_KG_incomplete, possible_results_LM, results_LM, results_LM_estimation, not_in_dictionary, already_existing, status_possible_result_LM_label, status_possible_result_LM_ID, dictio_label_possible_entities):
@@ -78,7 +78,7 @@ def find_results_KG_complete(tripel, data):
         errors.append("Tripel is in a wrong format {}".format(tripel))
     for result in results:
         label = find_label(result, data)
-        if "WARNING" in label:
+        if "[WARNING]" in label:
             errors.append(label) 
         else:
             results_KG_complete[result] = label
@@ -102,14 +102,14 @@ def find_results_KG_incomplete(tripel, parameter, data):
 
     for result in results:
         label = find_label(result, data)
-        if "WARNING" in label:
+        if "[WARNING]" in label:
             errors.append(label) 
         else:
             results_KG_incomplete[result] = label
     
     for result in results_KG_incomplete:
         classes = find_class(result, data)
-        if "WARNING" in str(classes):
+        if "[WARNING]" in str(classes):
             errors.append(classes)
         else:
             for c in classes:
@@ -147,7 +147,7 @@ def find_results_LM(result_LM, results_KG_complete, expected_classes, parameter,
             possible_entities = []
             for entity_id in dictio_label_id[label]:
                 classes_LM = find_class(entity_id, data)
-                if "WARNING" in str(classes_LM):
+                if "[WARNING]" in str(classes_LM):
                     errors.append(classes_LM)
                 else:
                     for c in classes_LM:

@@ -484,7 +484,7 @@ def main():
     results_files = []
     for entry in args.RESULTS_FILES:
         # load results file 
-        if "json" in entry:
+        if os.path.isfile(entry):
             results_files.append(entry)
         else:
             path = entry

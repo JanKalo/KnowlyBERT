@@ -32,12 +32,12 @@ def execute_query(tripel, parameter, data):
         #Language Model
         label_subj = helper_functions.find_label(tripel[0], data)
         label_obj = helper_functions.find_label(tripel[2], data)
-        if "WARNING" in label_subj:
+        if "[WARNING]" in label_subj:
             errors.append(label_subj) 
-        if "WARNING" in label_obj:
+        if "[WARNING]" in label_obj:
             errors.append(label_obj) 
         
-        if ("WARNING" not in label_subj and "WARNING" not in label_obj):
+        if ("[WARNING]" not in label_subj and "[WARNING]" not in label_obj):
             if parameter["apc"] or results_KG_incomplete == {}:
                 if label_subj == '?':
                     expected_classes = data["prop_classes"][tripel[1]]["?PQ"]
@@ -55,8 +55,7 @@ def execute_query(tripel, parameter, data):
         else:
             return_list = [None, None, None, errors]
     except KeyboardInterrupt:
-        print("Keyboard interrupt in process")
-        raise KeyboardInterruptError()
+        sys.exit("Keyboard Interrupt in process")
     except:
         print("Exception in Process")
         traceback.print_exc(file=sys.stdout)
@@ -84,6 +83,7 @@ def execute(parameter, data):
         subj = str(tripel[0]).split('/')[-1].replace('>', "")
         prop = str(tripel[1]).split('/')[-1].replace('>', "")
         obj = str(tripel[2]).split('/')[-1].replace('>', "")
+        #if prop in ["P19", "P20", "P27", "P30", "P37", "P47", "P54", "P69", "P101", "P102", "P106", "P108", "P136", "P138", "P166", "P176", "P178", "P279", "P364", "P407", "P413", "P449", "P463", "P527", "P530", "P1376", "P1412", "P1923"]:
         if prop in data["prop_template"]:
             queries.append([subj, prop, obj])
         line = queries_file.readline().replace("\n", "")

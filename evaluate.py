@@ -554,7 +554,7 @@ def read_config_file():
     config_file.close()
     return dictio_config
 
-def read_dataset_files(dictio_config):   
+def read_dataset_files(dictio_config, queries_string):   
     #parsing the wikidata datasets
     dictio_wikidata_subjects = {} #maps subjects to given property and object of complete and incomplete wikidata
     dictio_wikidata_objects = {} #maps objects to given subject an property of complete and incomplete wikidata
@@ -567,7 +567,7 @@ def read_dataset_files(dictio_config):
     #        dictio_wikidata_objects = json.load(objects)
     #    print("read saved dictionaries for {}".format(actu_prop))
     #else:
-    wikidata_gold_file = open(dictio_config["wikidata_gold_path"], "r")
+    wikidata_gold_file = open(dictio_config["wikidata_gold_path"][queries_string], "r")
     for line in wikidata_gold_file:
         tripel = (line.replace("\n", "")).split(" ")
         subj = str(tripel[0]).split('/')[-1].replace('>', "")
@@ -595,7 +595,7 @@ def read_dataset_files(dictio_config):
     wikidata_gold_file.close()
     del wikidata_gold_file
 
-    wikidata_missing_tripels = open(dictio_config["wikidata_missing_tripel_path"]["new"], "r")
+    wikidata_missing_tripels = open(dictio_config["wikidata_missing_tripel_path"][queries_string], "r")
     for line in wikidata_missing_tripels:
         tripel = (line.replace("\n", "")).split(" ")
         subj = str(tripel[0]).split('/')[-1].replace('>', "")
@@ -634,20 +634,20 @@ def read_dataset_files(dictio_config):
     #file_subjects.close()
     return dictio_wikidata_subjects, dictio_wikidata_objects
 
-def read_label_id_file(dictio_config):
+def read_label_id_file(dictio_config, queries_string):
     #parsing the label-ID-dictionary
     dictio_label_id = {}
     #label_id_file = open(dictio_config["label_id_path"], "r")
-    label_id_file = open(dictio_config["label_id_rdfLabel_path"], "r")
+    label_id_file = open(dictio_config["label_id_rdfLabel_path"][queries_string], "r")
     dictio_label_id = json.load(label_id_file)
     label_id_file.close()
     return dictio_label_id
 
-def read_id_label_file(dictio_config):
+def read_id_label_file(dictio_config, queries_string):
     #parsing the ID-label-dictionary
     dictio_id_label = {}
-    id_label_file = open(dictio_config["id_label_path"], "r")
-    #id_label_file = open(dictio_config["id_label_rdfLabel_path"], "r")
+    #id_label_file = open(dictio_config["id_label_path"], "r")
+    id_label_file = open(dictio_config["id_label_rdfLabel_path"][queries_string], "r")
     dictio_id_label = json.load(id_label_file)
     id_label_file.close()
     return dictio_id_label
@@ -711,24 +711,26 @@ def make_trie(words):
         current_dict[_end] = _end
     return root
 
-def read_query_id_file(dictio_config):
+def read_query_id_file(dictio_config, queries_string):
     #read json file for dictio of query and ID for Phil ;)
     dictio_query_id = {}
-    file_query_id = open(dictio_config["query_id_path"]["new"], "r")
+    file_query_id = open(dictio_config["query_id_path"][queries_string], "r")
     dictio_query_id = json.load(file_query_id)
     file_query_id.close()
     return dictio_query_id
 
 if __name__ == '__main__':
+    queries_string = "ba"
+
     dictio_config = read_config_file()
-    dictio_wikidata_subjects, dictio_wikidata_objects = read_dataset_files(dictio_config)
-    dictio_label_id = read_label_id_file(dictio_config)
-    dictio_id_label = read_id_label_file(dictio_config)
+    dictio_wikidata_subjects, dictio_wikidata_objects = read_dataset_files(dictio_config, queries_string)
+    dictio_label_id = read_label_id_file(dictio_config, queries_string)
+    dictio_id_label = read_id_label_file(dictio_config, queries_string)
     dictio_id_p31, dictio_id_p279 = read_p31_p279_file(dictio_config)
     #dictio_prop_probdistribution = read_cardinality_estimation_file(dictio_config)
     dictio_prop_classes = read_prop_classes_file(dictio_config)
     dictio_entity_popularity = read_entity_popularity_file(dictio_config)
-    dictio_query_id = read_query_id_file(dictio_config)
+    dictio_query_id = read_query_id_file(dictio_config, queries_string)
 
     data = {}
     data["config"] = dictio_config
@@ -765,7 +767,29 @@ if __name__ == '__main__':
     #evaluation 1
     parameter = {}
     parameter["wikidata_incomplete"] = "random_incomplete"
-    parameter["queries_path"] = dictio_config["queries_path"]["new"]
+    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
+    parameter["lm"] = "bert"
+    parameter["mc"] = [-7]
+    parameter["mr"] = 1000
+    parameter["ces"] = -1
+    parameter["cep"] = [-1]
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100]
+    parameter["tmn"] = 10
+    parameter["tmp"] = [0.5]
+    parameter["tp"] = dictio_config["template_path"]["LAMA"]
+    parameter["ts"] = 1
+    parameter["trm"] = "max"
+    parameter["apc"] = False
+    parameter["ps"] = 1
+    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+
+    #evaluation 2
+    parameter = {}
+    parameter["wikidata_incomplete"] = "random_incomplete"
+    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
     parameter["lm"] = "bert"
     parameter["mc"] = [-7]
     parameter["mr"] = 1000
@@ -779,37 +803,15 @@ if __name__ == '__main__':
     parameter["trm"] = "max"
     parameter["apc"] = False
     parameter["ps"] = 1
-    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
-        evaluations.append(parameter)
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
-
-    #evaluation 2
-    parameter = {}
-    parameter["wikidata_incomplete"] = "random_incomplete"
-    parameter["queries_path"] = dictio_config["queries_path"]["new"]
-    parameter["lm"] = "bert"
-    parameter["mc"] = [-7]
-    parameter["mr"] = 1000
-    parameter["ces"] = -1
-    parameter["cep"] = [-1]
-    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100]
-    parameter["tmn"] = 10
-    parameter["tmp"] = [0.5]
-    parameter["tp"] = dictio_config["template_path"]["ranking2_1"]
-    parameter["ts"] = 5
-    parameter["trm"] = "avg"
-    parameter["apc"] = False
-    parameter["ps"] = 1
-    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
-        evaluations.append(parameter)
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+    #if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+    #    evaluations.append(parameter)
+    #else:
+    #    print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
     #evaluation 3
     parameter = {}
     parameter["wikidata_incomplete"] = "random_incomplete"
-    parameter["queries_path"] = dictio_config["queries_path"]["new"]
+    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
     parameter["lm"] = "bert"
     parameter["mc"] = [-7]
     parameter["mr"] = 1000
@@ -823,15 +825,15 @@ if __name__ == '__main__':
     parameter["trm"] = "max"
     parameter["apc"] = False
     parameter["ps"] = 1
-    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
-        evaluations.append(parameter)
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+    #if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+    #    evaluations.append(parameter)
+    #else:
+    #    print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
     #evaluation 4
     parameter = {}
     parameter["wikidata_incomplete"] = "random_incomplete"
-    parameter["queries_path"] = dictio_config["queries_path"]["new"]
+    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
     parameter["lm"] = "bert"
     parameter["mc"] = [-7]
     parameter["mr"] = 1000
@@ -845,15 +847,15 @@ if __name__ == '__main__':
     parameter["trm"] = "max"
     parameter["apc"] = False
     parameter["ps"] = 1
-    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
-        evaluations.append(parameter)
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+    #if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+    #    evaluations.append(parameter)
+   # else:
+    #    print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
     #evaluation 5
     parameter = {}
     parameter["wikidata_incomplete"] = "random_incomplete"
-    parameter["queries_path"] = dictio_config["queries_path"]["new"]
+    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
     parameter["lm"] = "bert"
     parameter["mc"] = [-7]
     parameter["mr"] = 1000
@@ -867,15 +869,15 @@ if __name__ == '__main__':
     parameter["trm"] = "avg"
     parameter["apc"] = False
     parameter["ps"] = 1
-    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
-        evaluations.append(parameter)
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+    #if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+    #    evaluations.append(parameter)
+    #else:
+    #    print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
     #evaluation 6
     parameter = {}
     parameter["wikidata_incomplete"] = "random_incomplete"
-    parameter["queries_path"] = dictio_config["queries_path"]["new"]
+    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
     parameter["lm"] = "bert"
     parameter["mc"] = [-7]
     parameter["mr"] = 1000
@@ -889,10 +891,10 @@ if __name__ == '__main__':
     parameter["trm"] = "max"
     parameter["apc"] = False
     parameter["ps"] = 1
-    if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
-        evaluations.append(parameter)
-    else:
-        print("at least one of the paramter mc, cep, tmc or tmp are wrong")
+    #if correct_parameter(parameter["mc"], parameter["cep"], parameter["tmc"], parameter["tmp"], parameter["ts"]):
+    #    evaluations.append(parameter)
+    #else:
+    #    print("at least one of the paramter mc, cep, tmc or tmp are wrong")
 
     runtime = []
     for parameter in evaluations:
