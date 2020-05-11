@@ -6,6 +6,7 @@ import threshold_method.threshold as threshold_method
 import signal
 import sys, traceback
 import timeit
+import kb_embeddings.kb_embeddings as kb_embeddings
 
 #function to find the classes of a given entity (i.e. item_id_url=http://www.wikidata.org/entity/Q567)
 def find_class(id, data):
@@ -117,7 +118,51 @@ def find_results_KG_incomplete(tripel, parameter, data):
                     expected_classes.append(c)
     return results_KG_incomplete, expected_classes, errors
 
-def find_results_LM(result_LM, results_KG_complete, expected_classes, parameter, data):
+def get_best_entity_id_for_label(tripel, possible_entities, parameter, data):
+    if parameter["kbe"] != -1:
+        min_loss = float("inf")
+        chosen_entity = None
+        dictio_entity_loss = {}
+        error = None
+        for entity in possible_entities:
+            if entity in data["entity_popularity"]:
+                popularity = data["entity_popularity"][entity]
+            else:
+                popularity = 0
+            #popularity of the entity has to be >= as parameter["ps"] to be a "good" result of LM
+            if popularity >= parameter["ps"]:
+                loss, error = kb_embeddings.get_loss(data["kb_embedding"], tripel, entity)
+                if loss != None:
+                    if loss < min_loss:
+                        min_loss = loss
+                        chosen_entity = entity
+                    dictio_entity_loss[entity] = loss
+                else:
+                    dictio_entity_loss[entity] = error
+            else:
+                dictio_entity_loss[entity] = "popularity < {}".format(parameter["ps"])
+        return chosen_entity, dictio_entity_loss, error
+    else:
+        #check the popularity of the possible entities of the actu label
+        max_popularity = -1
+        chosen_entity = None
+        dictio_entity_popularity = {}
+        for entity in possible_entities:
+            if entity in data["entity_popularity"]:
+                popularity = data["entity_popularity"][entity]
+            else:
+                popularity = 0
+            if popularity > max_popularity:
+                max_popularity = popularity
+                chosen_entity = entity
+            dictio_entity_popularity[entity] = popularity
+        #popularity of the chosen entity has to be >= as parameter["ps"] to be a "good" result of LM
+        if max_popularity >= parameter["ps"]:
+            return chosen_entity, dictio_entity_popularity, None
+        else:
+            return None, dictio_entity_popularity, None
+
+def find_results_LM(tripel, result_LM, results_KG_complete, expected_classes, parameter, data):
     #return all possible results which fits to the classes of the KG results
     possible_results_LM = {}
     not_in_dictionary = {}         
@@ -154,24 +199,16 @@ def find_results_LM(result_LM, results_KG_complete, expected_classes, parameter,
                         if c in expected_classes:
                             possible_entities.append(entity_id)
                             break
-            #check the popularity of the possible entities of the actu label
-            max_popularity = -1
-            chosen_entity = None
-            dictio_entity_popularity = {}
-            for entity in possible_entities:
-                if entity in data["entity_popularity"]:
-                    popularity = data["entity_popularity"][entity]
-                else:
-                    popularity = 0
-                if popularity > max_popularity:
-                    max_popularity = popularity
-                    chosen_entity = entity
-                dictio_entity_popularity[entity] = popularity
-            if dictio_entity_popularity:
-                dictio_label_possible_entities[label] = dictio_entity_popularity
-            #popularity of the chosen entity has to be >= as parameter["ps"] to be a "good" result of LM
-            if max_popularity >= parameter["ps"]:
-                #chose the max probability if two labels are mapped to the same entity ID
+            
+            chosen_entity, dictio_entity_popularity_or_loss, error = get_best_entity_id_for_label(tripel, possible_entities, parameter, data)
+            if error:
+                errors.append(error)
+            if dictio_entity_popularity_or_loss:
+                dictio_label_possible_entities[label] = dictio_entity_popularity_or_loss
+            #choose the max probability if two labels are mapped to the same entity ID
+            if chosen_entity != None:
+                if parameter["kbe"] != -1:
+                    probability = kb_embeddings.calculate_probability(chosen_entity, dictio_entity_popularity_or_loss, probability)
                 if chosen_entity in possible_results_LM:
                     if probability > possible_results_LM[chosen_entity][1]:
                         possible_results_LM[chosen_entity] = [label, probability]

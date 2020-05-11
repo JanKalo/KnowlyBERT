@@ -48,7 +48,7 @@ def execute_query(tripel, parameter, data):
             #print("expected classes ", expected_classes)
             #print("START LAMA")
             result_LM = rank_with_templates.get_ranking(label_subj, tripel[1], label_obj, data["lm_build"], data["trie"], data["prop_template"], parameter["ts"], parameter["trm"])
-            possible_results_LM, not_in_dictionary, errors_LM, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID = helper_functions.find_results_LM(result_LM, results_KG_complete, expected_classes, parameter, data)
+            possible_results_LM, not_in_dictionary, errors_LM, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID = helper_functions.find_results_LM(tripel, result_LM, results_KG_complete, expected_classes, parameter, data)
             for error in errors_LM:
                 errors.append(error)
             return_list = helper_functions.get_all_results(parameter, data, tripel, "{} --> {} {} {}".format(tripel, label_subj, tripel[1], label_obj), possible_results_LM, result_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_incomplete, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID, errors)
@@ -84,7 +84,8 @@ def execute(parameter, data):
         prop = str(tripel[1]).split('/')[-1].replace('>', "")
         obj = str(tripel[2]).split('/')[-1].replace('>', "")
         #if prop in ["P19", "P20", "P27", "P30", "P37", "P47", "P54", "P69", "P101", "P102", "P106", "P108", "P136", "P138", "P166", "P176", "P178", "P279", "P364", "P407", "P413", "P449", "P463", "P527", "P530", "P1376", "P1412", "P1923"]:
-        if prop in data["prop_template"]:
+        #if prop in data["prop_template"]:
+        if prop == "P1412":
             queries.append([subj, prop, obj])
         line = queries_file.readline().replace("\n", "")
     queries_file.close()
@@ -98,7 +99,7 @@ def execute(parameter, data):
     try:
         print("start hybrid system")
         #queries = []
-        #queries.append(['?', 'P103', 'Q8752'])
+        #queries.append(['?', 'P37', 'Q7411'])
         output_first_try = []
         count = 0
         for tripel in queries:
