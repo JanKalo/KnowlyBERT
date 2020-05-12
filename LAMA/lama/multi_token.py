@@ -104,7 +104,7 @@ def get_next_tokens(trie, word):
     return current_dict.keys()
 
 
-def get_results(model, sentence):
+def get_results(model, sentence, paragraph):
 
     #number of tokens
     max_tokens = 3
@@ -114,7 +114,7 @@ def get_results(model, sentence):
         if i != 1:
             sentence = sentence.replace("[MASK]","[MASK] [MASK]", 1)
         #print(sentence)
-        sentences = [sentence]
+        sentences = [sentence, paragraph]
 
         original_log_probs_list, [token_ids], [masked_indices] = model.get_batch_generation([sentences], try_cuda=True)
         index_list = None
@@ -127,10 +127,10 @@ def get_results(model, sentence):
             result_list.append(results)
     return result_list
 
-def get_multi_token_results(sentence, model, trie):
+def get_multi_token_results(sentence, paragraph, model, trie):
     #TODO: Not Sorted
     try:
-        result_list = get_results(model, sentence)
+        result_list = get_results(model, sentence, paragraph)
         label_results = join_result_lists(result_list, trie)
     except ValueError:
         label_results = []

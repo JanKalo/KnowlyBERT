@@ -223,17 +223,20 @@ def get_entities_db(relation):
 
 import random
 # Implementation of rank1 method from Bouroui et al.
-def rank_sentences_1(model, index_entry, entityPairs, entityLabels, labelTrie, randomEntities):
+def rank_sentences_1(model, index_entry, paragraphDict, entityPairs, entityLabels, labelTrie, randomEntities):
     output_rank = 0
     orig_sentence = index_entry['sentence']
     print(orig_sentence)
     for idx, (e1,e2) in enumerate(randomEntities):
         e1_label = entityLabels[e1][0]
         e2_label = entityLabels[e2][0]
-
+        e1_paragraph = paragraphDict["http://www.wikidata.org/entity/" + e1]
+        e2_paragraph = paragraphDict["http://www.wikidata.org/entity/" + e2]
         correct_e1_labels = set(entityLabels[e1])
         correct_e2_labels = set(entityLabels[e2])
         #insert mask tokens
+
+        #TODO: IST HIER WAS FALSCH?!
         e1 = orig_sentence[index_entry['e1'][0]:index_entry['e1'][1]]
         e2 = orig_sentence[index_entry['e2'][0]:index_entry['e2'][1]]
         sentence_1 = orig_sentence[:index_entry['e1'][0]] + "[MASK]" + orig_sentence[index_entry['e1'][1]:]
@@ -245,10 +248,10 @@ def rank_sentences_1(model, index_entry, entityPairs, entityLabels, labelTrie, r
         sentences.append(sentence_1)
         sentences.append(sentence_2)
 
-        for result, value in multi_token.get_multi_token_results(sentence_1, model, labelTrie):
+        for result, value in multi_token.get_multi_token_results(sentence_1, e1_paragraph, model, labelTrie):
             if result in correct_e1_labels:
                 output_rank += 1
-        for result, value in multi_token.get_multi_token_results(sentence_2, model, labelTrie):
+        for result, value in multi_token.get_multi_token_results(sentence_2, e2_paragraph, model, labelTrie):
             if result in correct_e2_labels:
                 output_rank += 1
     print(output_rank)
@@ -258,13 +261,15 @@ def rank_sentences_1(model, index_entry, entityPairs, entityLabels, labelTrie, r
 import multi_token as mt
 
 #Rank entities with regard to second metric of paper by
-def rank_sentences_2(model, index_entry, entityPairs, entity2Labels, label2Entities, subjectLabels, objectLabels):
+def rank_sentences_2(model, index_entry, paragraphDict, entityPairs, entity2Labels, label2Entities, subjectLabels, objectLabels):
 
     orig_sentence = index_entry['sentence']
     print(orig_sentence)
     
     sentence_1 = orig_sentence[:index_entry['e1'][0]] + "[MASK]" + orig_sentence[index_entry['e1'][1]:]
     sentence_2 = orig_sentence[:index_entry['e2'][0]] + "[MASK]" + orig_sentence[index_entry['e2'][1]:]
+    e1_paragraph = paragraphDict[index_entry['entities'][0]]
+    e2_paragraph = paragraphDict[index_entry['entities'][1]]
     sentences = []
     sentences.append(sentence_1)
     sentences.append(sentence_2)
@@ -281,9 +286,9 @@ def rank_sentences_2(model, index_entry, entityPairs, entity2Labels, label2Entit
 
     results1 = []
     results2 = []
-    for result, value in multi_token.get_multi_token_results(sentence_1, model, label2Entities):
+    for result, value in multi_token.get_multi_token_results(sentence_1, e1_paragraph, model, label2Entities):
         results1.append(result)
-    for result, value in multi_token.get_multi_token_results(sentence_2, model, label2Entities):
+    for result, value in multi_token.get_multi_token_results(sentence_2, e2_paragraph, model, label2Entities):
         results2.append(result)
 
     print("results 1 has length {}".format(len(results1)))
@@ -409,10 +414,11 @@ if __name__ == '__main__':
     label2Entities, entity2Labels = get_entity_labels_files('/home/kalo/conferences/iswc2020/data/label2entity.json','/home/kalo/conferences/iswc2020/data/entity2label.json')
     entity_trie = make_trie(label2Entities.keys())
     entities = get_entitis_file('/home/kalo/conferences/iswc2020/data/missing_data.new.nt')
-
+    paragraph_file = open("/home/kalo/conferences/iswc2020/data/paragraph_dict.json")
+    paragraphDict = json.load(paragraph_file)
 
     print("read entity dictionaries and built trie")
-    props = ['P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412', 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P740', 'P361']
+    props = ['P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001', 'P31', 'P495', 'P159', 'P740', 'P361']
    # props = ['P413', 'P166', 'P449', 'P69', 'P47', 'P138', 'P364', 'P54', 'P463', 'P101',
             # 'P1923', 'P106', 'P527', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P178', 'P1376', 'P131', 'P1412',
             # 'P108', 'P136', 'P17', 'P39', 'P264', 'P276', 'P937', 'P140', 'P1303', 'P127', 'P103', 'P190', 'P1001',
@@ -460,7 +466,7 @@ if __name__ == '__main__':
             print("starting to rank sentences for property {}".format(prop))
             #first filter by ranking method2
             for sentence in filtered_index:
-                score = rank_sentences_2(model, sentence, prop_data["ent"] , prop_data["ent2Label"], prop_data["trie"], s_labels, o_labels)
+                score = rank_sentences_2(model, sentence, paragraphDict ,prop_data["ent"] , prop_data["ent2Label"], prop_data["trie"], s_labels, o_labels)
                 #score = rank_sentences_1(model, sentence, prop_data["ent"], prop_data["ent2Label"], prop_data["trie"])
                 orig_sentence = sentence["sentence"]
                 intermediate_results[orig_sentence] = score
@@ -473,7 +479,7 @@ if __name__ == '__main__':
             randomEntities = random.sample(prop_data["ent"], 200)
             for sentence in filtered_index:
                 if sentence['sentence'] in top_templates:
-                    score = rank_sentences_1(model, sentence, prop_data["ent"], prop_data["ent2Label"], prop_data["trie"],randomEntities)
+                    score = rank_sentences_1(model, sentence, paragraphDict, prop_data["ent"], prop_data["ent2Label"], prop_data["trie"],randomEntities)
                     orig_sentence = sentence["sentence"]
 
                     if sentence['e1'][0] < sentence['e2'][0]:

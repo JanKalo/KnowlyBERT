@@ -146,7 +146,7 @@ def merge_ranking_avg(results_per_template):
 
     return [(k, v) for k, v in sorted(intermediate_rank.items(), reverse=True, key=lambda item: item[1])]
 
-def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templates, trm):
+def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templates,paragraphDict, trm):
 
     merged_ranking = []
 
@@ -158,13 +158,21 @@ def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templat
         #build sentence for query
 
         if e1 == "?":
+            try:
+                paragraph = paragraphDict["http://www.wikidata.org/entity/"+e2]
+            except KeyError:
+                paragraph = ""
             instantiated_template = template.replace("[S]","[MASK]")
             instantiated_template = instantiated_template.replace("[O]", e2)
         else:
+            try:
+                paragraph = paragraphDict["http://www.wikidata.org/entity/"+e1]
+            except KeyError:
+                paragraph = ""
             instantiated_template = template.replace("[O]","[MASK]")
             instantiated_template = instantiated_template.replace("[S]", e1)
 
-        result_per_templates.append((mt.get_multi_token_results(instantiated_template, model, entity_labels), confidence))
+        result_per_templates.append((mt.get_multi_token_results(instantiated_template, paragraph, model, entity_labels), confidence))
 
     if trm == "avg":
         return merge_ranking_avg(result_per_templates)
@@ -173,6 +181,7 @@ def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templat
 
 import dill
 import os
+import json
 if __name__ == '__main__':
 
     lm = "bert"
@@ -183,11 +192,12 @@ if __name__ == '__main__':
             bert = dill.load(config_dictionary_file)
             #load entity labels
             label2Entities, entity2Labels = get_entity_labels_files('/home/kalo/conferences/iswc2020/data/label2entity.json','/home/kalo/conferences/iswc2020/data/entity2label.json')
-
+            paragraph_file = open("/home/kalo/conferences/iswc2020/data/paragraph_dict.json")
+            paragraphDict = json.load(paragraph_file)
             entity_trie = make_trie(label2Entities.keys())
             #get templates
             template = readTemplates()
             for entity in entities:
                 # start ranking
-                rank = get_ranking(entity2Labels[entity][0] ,prop,"?", bert, entity_trie, template, 5, trm="max")
+                rank = get_ranking(entity2Labels[entity][0] ,prop,"?", bert, entity_trie, template, 5, paragraphDict, trm="max")
                 print(rank)
