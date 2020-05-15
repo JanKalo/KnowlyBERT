@@ -23,31 +23,33 @@ $ python3 -m pip install -r requirements.py
 
 ## Repository Structure
 
-### LAMA/
+For more information, see the README.md files located in the following subdirectories.
+
+### /LAMA/
 
 TODO
 
-### LM\_sentence/
+### /LM\_sentence/
 
 TODO
 
-### baseline/
+### /baseline/
 
 TODO
 
-### kb\_embeddings/
+### /kb\_embeddings/
 
 TODO
 
-### prob\_distribution/
+### /prob\_distribution/
 
 TODO
 
-### threshold\_method/
+### /threshold\_method/
 
 TODO
 
-### wikidata/
+### /wikidata/
 
 TODO
 
@@ -59,7 +61,7 @@ This section only covers the files located in the root of this repository.
 
 TODO
 
-### hybrid\_system.py
+### helper\_functions.py
 
 TODO
 
