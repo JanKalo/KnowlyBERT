@@ -398,7 +398,7 @@ def evaluate(
     # save evaluation
     print("INFO: saving {0} ...".format(output_fn_prefix))
     with open(output_fn_prefix + ".json", "w") as f:
-        json.dump(evaluation, f)
+        json.dump(evaluation, f, indent=4)
     #plot_evaluation(evaluation, output_fn_prefix, "per_query", "precision")
     #plot_evaluation(evaluation, output_fn_prefix, "per_query", "recall")
     #plot_evaluation(evaluation, output_fn_prefix, "per_relation", "precision")

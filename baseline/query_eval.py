@@ -3,6 +3,7 @@ import sys
 import json
 
 from argparse import ArgumentParser
+from tqdm import tqdm
 
 
 def read_stdin_queries():
@@ -67,6 +68,12 @@ def read_stdin_queries():
                     "are NOT from the same queries as currently read in. "
                     "Please remove these files manually to continue."
                     )
+    else:
+        # not existing - create them
+        with open("query_map.json", "w") as f:
+            json.dump(query_map, f, indent=4)
+        with open("query_propmap.json", "w") as f:
+            json.dump(query_propmap, f, indent=4)
 
     # done
     return query_map, query_atoms, query_propmap
@@ -123,7 +130,7 @@ def main():
     sys.stdout.write("INFO: answering queries ...")
     sys.stdout.flush()
     query_results = {}
-    for query in query_map:
+    for query in tqdm(query_map, desc="answering queries"):
         # skip unknown properties
         query_results[query] = []
         if query_atoms[query]["p"] not in p_index:
@@ -145,13 +152,9 @@ def main():
     # save results
     sys.stdout.write("INFO: saving results ...")
     sys.stdout.flush()
-    with open("query_map.json", "w") as f:
-        json.dump(query_map, f)
-    with open("query_propmap.json", "w") as f:
-        json.dump(query_propmap, f)
     results_fn = os.path.splitext(os.path.basename(args.NT_FILE))[0] + ".json"
     with open(results_fn, "w") as f:
-        json.dump(query_results, f)
+        json.dump(query_results, f, indent=4)
     print(" done")
 
 
