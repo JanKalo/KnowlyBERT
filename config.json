@@ -13,4 +13,5 @@
 "prop_class_path": "/home/fichtel/conferences/iswc2020/data/dictio_prop_class_instances.json",
 "entity_popularity_path": "/home/fichtel/conferences/iswc2020/data/entity_popularity.json",
 "query_id_path" : {"new": "/home/fichtel/conferences/iswc2020/data/dictio_queriesnew_id.json", "ba": "/home/fichtel/conferences/iswc2020/data/dictio_queriesba_id.json" },
-"kb_embeddings": {"new": {"benchmark_path": "/data/ehler/benchmarks/wikidata-20181221TN-1k_2000_50", "embedding_path": {"hole": "/data/ehler/embeddings/embeddings/wikidata-20181221TN-1k_2000_50_hole"}}, "TODOO": {"benchmark_path": "/data/ehler/benchmarks/missing_data.new", "embedding_path": {"hole": "", "transe": "/data/ehler/embeddings/tf-gpu_1.14.0rc0/missing_data.new_transe"}}}}
+"kb_embeddings": {"new": {"benchmark_path": "/data/ehler/benchmarks/missing_data.new", "embedding_path": {"hole": "/data/ehler/embeddings/tf-gpu_1.14.0rc0/missing_data.new_hole"}}},
+"paragraph_path": "/home/kalo/conferences/iswc2020/data/paragraph_dict.json"}

@@ -10,11 +10,9 @@ import helper_functions
 import LAMA.templates.rank_with_templates as rank_with_templates
 import build_language_model as lm
 
-class KeyboardInterruptError(Exception): pass
-
 #execute the queries at KG and LM
 def execute_query(tripel, parameter, data):
-    return_list = [None, None, None, None]
+    dictio_data = {}
     errors = []
     try:
         #print("start process")
@@ -25,7 +23,6 @@ def execute_query(tripel, parameter, data):
 
         #results of incomplete Knowledge Graph
         results_KG_incomplete, expected_classes, errors_KG_incomplete = helper_functions.find_results_KG_incomplete(tripel, parameter, data)
-        number_of_KG_results_incomplete = len(results_KG_incomplete)
         for error in errors_KG_incomplete:
             errors.append(error)
         #print("KG result complete", results_KG_complete, "KG result incomplete", results_KG_incomplete)
@@ -47,15 +44,35 @@ def execute_query(tripel, parameter, data):
                     raise Exception("Tripel is in a wrong format {}".format(tripel))
             #print("expected classes ", expected_classes)
             #print("START LAMA")
-            result_LM = rank_with_templates.get_ranking(label_subj, tripel[1], label_obj, data["lm_build"], data["trie"], data["prop_template"], parameter["ts"], parameter["trm"])
-            possible_results_LM, not_in_dictionary, errors_LM, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID = helper_functions.find_results_LM(tripel, result_LM, results_KG_complete, expected_classes, parameter, data)
+            all_result_LM = rank_with_templates.get_ranking(label_subj, tripel[1], label_obj, data["lm_build"], data["trie"], data["prop_template"], parameter["ts"], data["paragraphs"], parameter["trm"])
+            possible_results_LM, not_in_dictionary, errors_LM, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID = helper_functions.find_results_LM(tripel, all_result_LM, results_KG_complete, expected_classes, parameter, data)
             for error in errors_LM:
                 errors.append(error)
-            return_list = helper_functions.get_all_results(parameter, data, tripel, "{} --> {} {} {}".format(tripel, label_subj, tripel[1], label_obj), possible_results_LM, result_LM, not_in_dictionary, results_KG_complete, results_KG_incomplete, expected_classes, number_of_KG_results_incomplete, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID, errors)
+
+            #calculate threshold for log prob automatically if it is wanted
+            threshold = None
+            if "auto" in parameter["tmc"]:
+                #parameter["tmc"].remove("auto")
+                threshold = helper_functions.auto_calculate_threshold(results_KG_incomplete, possible_results_LM)
+            
+            #no error occured
+            dictio_data["error"] = errors
+            #tripel of the query
+            dictio_data["tripel"] = tripel
+            #KG results
+            dictio_data["results_KG"] = {"complete": results_KG_complete, "incomplete": results_KG_incomplete, "expected_classes": expected_classes}
+            #LM results
+            dictio_data["results_LM"] = {"all": all_result_LM, "possible": possible_results_LM}
+            #current threshold for this query
+            dictio_data["auto_threshold"] = threshold
+            #debugg data
+            dictio_data["debugging"] = {"not_in_dictionary": not_in_dictionary, "dictio_label_possible_entities": dictio_label_possible_entities, "status_possible_result_LM_label": status_possible_result_LM_label, "status_possible_result_LM_ID": status_possible_result_LM_ID}
         else:
-            return_list = [None, None, None, errors]
+            dictio_data["error"] = errors
+            dictio_data["tripel"] = tripel
     except KeyboardInterrupt:
         sys.exit("Keyboard Interrupt in process")
+        return None
     except:
         print("Exception in Process")
         traceback.print_exc(file=sys.stdout)
@@ -65,11 +82,10 @@ def execute_query(tripel, parameter, data):
         else:
             error_string = str(tripel) + "\n" + traceback.format_exc()
         errors.append(error_string)
-        return_list = [None, [tripel], None, errors]
+        dictio_data["error"] = errors
+        dictio_data["tripel"] = tripel
     finally:
-        #print("finally end process")
-        #print(return_list)
-        return return_list
+        return dictio_data
 
 #execute the hybrid system
 def execute(parameter, data):
@@ -84,8 +100,7 @@ def execute(parameter, data):
         prop = str(tripel[1]).split('/')[-1].replace('>', "")
         obj = str(tripel[2]).split('/')[-1].replace('>', "")
         #if prop in ["P19", "P20", "P27", "P30", "P37", "P47", "P54", "P69", "P101", "P102", "P106", "P108", "P136", "P138", "P166", "P176", "P178", "P279", "P364", "P407", "P413", "P449", "P463", "P527", "P530", "P1376", "P1412", "P1923"]:
-        #if prop in data["prop_template"]:
-        if prop == "P1412":
+        if prop in data["prop_template"]:
             queries.append([subj, prop, obj])
         line = queries_file.readline().replace("\n", "")
     queries_file.close()
@@ -100,45 +115,53 @@ def execute(parameter, data):
         print("start hybrid system")
         #queries = []
         #queries.append(['?', 'P37', 'Q7411'])
-        output_first_try = []
+        query_data = []
+        retry_queries = []
         count = 0
         for tripel in queries:
-            #if count == 100:
+            #if count == 7:
             #    break
             result = execute_query(tripel, parameter, data)
-            output_first_try.append(result)
+            if result == None:
+                sys.exit("Stop program")
+            elif result["error"] != [] and "results_KG" not in result:
+                retry_queries.append(result["tripel"])
+            else:
+                query_data.append(result)
             count = count + 1
             print("{}/{}".format(count, len(queries)))
         
-        global all_retry_queries
-        all_retry_queries = []
-        for o in output_first_try:
-            if o[1] != None:
-                for actu in o[1]:
-                    if actu != None:
-                        all_retry_queries.append(actu)
-        
-        output_retry = []
-        if all_retry_queries != []:
-            print("Try it again: {}".format(all_retry_queries))
-            for tripel in all_retry_queries:
+        if retry_queries != []:
+            print("Try it again: {}".format(retry_queries))
+            for tripel in retry_queries:
                 result = execute_query(tripel, parameter, data)
-                output_retry.append(result)
-        
-        for o in output_first_try:
-            if o != [None, None, None, None]:
-                for err in o[3]:
-                    errors.append(err)
-                if o[0] != None:
-                    results_all_processes.append(o[0])
-                    log.append(o[2])
-        for o in output_retry:
-            if o != [None, None, None, None]:
-                for err in o[3]:
-                    errors.append(err)
-                if o[0] != None:
-                    results_all_processes.append(o[0])
-                    log.append(o[2])
+                query_data.append(result)
+
+        #calculate avg threshold over all queries of the automatically calculated thresholds
+        if "auto" in parameter["tmc"]:
+            avg_auto_threshold = 0
+            count = 0
+            for result in query_data:
+                if "auto_threshold" in result and result["auto_threshold"] != None:
+                    count = count + 1
+                    avg_auto_threshold = avg_auto_threshold + result["auto_threshold"]
+            if avg_auto_threshold == 0 or count == 0:
+                avg_auto_threshold = -100
+            else:
+                avg_auto_threshold = avg_auto_threshold / count
+            parameter["tmc"].remove("auto")
+            parameter["tmc"].append(avg_auto_threshold)
+
+        for result in query_data:
+            for err in result["error"]:
+                errors.append(err)
+            if "results_KG" in result:
+                label_subj = helper_functions.find_label(result["tripel"][0], data)
+                label_obj = helper_functions.find_label(result["tripel"][2], data)
+                string_query_LM = "{} --> {} {} {}".format(result["tripel"], label_subj, result["tripel"][1], label_obj)
+                return_list = helper_functions.get_all_results(parameter, data, result["tripel"], string_query_LM, result["results_KG"], result["results_LM"], result["auto_threshold"], result["debugging"]) 
+                results_all_processes.append(return_list[0])
+                log.append(return_list[1])
         
     except KeyboardInterrupt:
         print ("Keyboard interrupt in main")
@@ -149,4 +172,4 @@ def execute(parameter, data):
         results_all_processes = []
     finally:
         print ("Cleaning up Main")
-        return results_all_processes, log, errors
+        return parameter, results_all_processes, log, errors
