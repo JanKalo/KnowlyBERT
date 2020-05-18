@@ -71,7 +71,7 @@ def get_entities(relation):
     return entityPairs, entity2Labels, label2Entities
 
 
-def merge_rankings_minmax(results_per_template):
+def merge_rankings_minmax(results_per_template, min_max_diff = 0.1):
     intermediate_rank = {}
     max_confusion = {}
     min_confusion = {}
@@ -95,7 +95,7 @@ def merge_rankings_minmax(results_per_template):
     for label in max_confusion.keys():
         max = math.exp(max_confusion[label])
         min = math.exp(min_confusion[label])
-        if max > 0.1 - min:
+        if max > min_max_diff - min:
             intermediate_rank[label] = max_confusion[label]
 
     return [(k, v) for k, v in sorted(intermediate_rank.items(), reverse=True, key=lambda item: item[1])]
@@ -107,7 +107,7 @@ def merge_rankings_minmax(results_per_template):
 
 #TODO: Check whether this method is leading to good results
 #TODO: Maybe include confu
-def merge_ranking_avg(results_per_template):
+def merge_ranking_avg(results_per_template, min_max_diff = 0.1):
     intermediate_rank = {}
     max_confusion = {}
     min_confusion = {}
@@ -141,12 +141,12 @@ def merge_ranking_avg(results_per_template):
     for label in max_confusion.keys():
         max = math.exp(max_confusion[label])
         min = math.exp(min_confusion[label])
-        if max > 0.1 - min:
+        if max > min_max_diff - min:
             intermediate_rank[label] = (sum_confusion[label]/denominator_confusion[label])
 
     return [(k, v) for k, v in sorted(intermediate_rank.items(), reverse=True, key=lambda item: item[1])]
 
-def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templates,paragraphDict, trm):
+def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templates,paragraphDict, trm, min_max_diff):
 
     merged_ranking = []
 
@@ -175,9 +175,9 @@ def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templat
         result_per_templates.append((mt.get_multi_token_results(instantiated_template, paragraph, model, entity_labels), confidence))
 
     if trm == "avg":
-        return merge_ranking_avg(result_per_templates)
+        return merge_ranking_avg(result_per_templates, min_max_diff)
     if trm == "max":
-        return merge_rankings_minmax(result_per_templates)
+        return merge_rankings_minmax(result_per_templates, min_max_diff)
 
 import dill
 import os
