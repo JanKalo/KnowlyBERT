@@ -744,6 +744,7 @@ if __name__ == '__main__':
     #ps: min value for entity popularity score (no negativ values) --> not activated: 0
     #kbe: name of the kb embedding: "hole" --> not activated: -1
     #cp: bool value wheather context paragraphs should be used
+    #mmd: min max difference of probability of a label if multiple templates are used
 
     #evaluation 1
     parameter = {}
@@ -758,8 +759,9 @@ if __name__ == '__main__':
     parameter["trm"] = "max"
     parameter["apc"] = False
     parameter["ps"] = 1
-    parameter["kbe"] = "hole"
-    parameter["cp"] = False
+    parameter["kbe"] = -1
+    parameter["cp"] = True
+    parameter["mmd"] = 0.1
     if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -779,7 +781,8 @@ if __name__ == '__main__':
     parameter["apc"] = False
     parameter["ps"] = 1
     parameter["kbe"] = -1
-    parameter["cp"] = False
+    parameter["cp"] = True
+    parameter["mmd"] = 0.2
     if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -790,80 +793,147 @@ if __name__ == '__main__':
     parameter["wikidata_incomplete"] = "random_incomplete"
     parameter["queries_path"] = dictio_config["queries_path"][queries_string]
     parameter["lm"] = "bert"
-    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100]
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100, "auto"]
     parameter["tmn"] = 10
     parameter["tmp"] = [0.5]
-    parameter["tp"] = dictio_config["template_path"]["LPQAQ_paraphrase"]
+    parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 5
     parameter["trm"] = "max"
     parameter["apc"] = False
     parameter["ps"] = 1
-    parameter["kbe"] = "hole"
+    parameter["kbe"] = -1
     parameter["cp"] = True
-    #if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
-    #    evaluations.append(parameter)
-    #else:
-    #    print("at least one of the paramter tmc or tmp are wrong")
+    parameter["mmd"] = 0.3
+    if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter tmc or tmp are wrong")
 
     #evaluation 4
     parameter = {}
     parameter["wikidata_incomplete"] = "random_incomplete"
     parameter["queries_path"] = dictio_config["queries_path"][queries_string]
     parameter["lm"] = "bert"
-    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100]
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100, "auto"]
     parameter["tmn"] = 10
     parameter["tmp"] = [0.5]
-    parameter["tp"] = dictio_config["template_path"]["LPQAQ_paraphrase"]
+    parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 5
-    parameter["trm"] = "avg"
+    parameter["trm"] = "max"
     parameter["apc"] = False
     parameter["ps"] = 1
-    parameter["kbe"] = "hole"
+    parameter["kbe"] = -1
     parameter["cp"] = True
-    #if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
-    #    evaluations.append(parameter)
-    #else:
-    #    print("at least one of the paramter tmc or tmp are wrong")
+    parameter["mmd"] = 0.4
+    if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter tmc or tmp are wrong")
 
     #evaluation 5
     parameter = {}
     parameter["wikidata_incomplete"] = "random_incomplete"
     parameter["queries_path"] = dictio_config["queries_path"][queries_string]
     parameter["lm"] = "bert"
-    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100]
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100, "auto"]
     parameter["tmn"] = 10
     parameter["tmp"] = [0.5]
-    parameter["tp"] = dictio_config["template_path"]["ranking2_1"]
-    parameter["ts"] = 10
-    parameter["trm"] = "avg"
+    parameter["tp"] = dictio_config["template_path"]["ranking2"]
+    parameter["ts"] = 5
+    parameter["trm"] = "max"
     parameter["apc"] = False
     parameter["ps"] = 1
-    parameter["kbe"] = "hole"
+    parameter["kbe"] = -1
     parameter["cp"] = True
-    #if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
-    #    evaluations.append(parameter)
-    #else:
-    #    print("at least one of the paramter tmc or tmp are wrong")
+    parameter["mmd"] = 0.5
+    if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter tmc or tmp are wrong")
 
     #evaluation 6
     parameter = {}
     parameter["wikidata_incomplete"] = "random_incomplete"
     parameter["queries_path"] = dictio_config["queries_path"][queries_string]
     parameter["lm"] = "bert"
-    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100]
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100, "auto"]
     parameter["tmn"] = 10
     parameter["tmp"] = [0.5]
-    parameter["tp"] = dictio_config["template_path"]["ranking2_1"]
-    parameter["ts"] = 100
+    parameter["tp"] = dictio_config["template_path"]["ranking2"]
+    parameter["ts"] = 5
     parameter["trm"] = "max"
     parameter["apc"] = False
     parameter["ps"] = 1
-    parameter["kbe"] = "hole"
+    parameter["kbe"] = -1
     parameter["cp"] = True
-    #if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
-    #    evaluations.append(parameter)
-    #else:
-    #    print("at least one of the paramter tmc or tmp are wrong")
+    parameter["mmd"] = 0.6
+    if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter tmc or tmp are wrong")
+    
+    #evaluation 7
+    parameter = {}
+    parameter["wikidata_incomplete"] = "random_incomplete"
+    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
+    parameter["lm"] = "bert"
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100, "auto"]
+    parameter["tmn"] = 10
+    parameter["tmp"] = [0.5]
+    parameter["tp"] = dictio_config["template_path"]["ranking2"]
+    parameter["ts"] = 5
+    parameter["trm"] = "max"
+    parameter["apc"] = False
+    parameter["ps"] = 1
+    parameter["kbe"] = -1
+    parameter["cp"] = True
+    parameter["mmd"] = 0.7
+    if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter tmc or tmp are wrong")
+
+    #evaluation 8
+    parameter = {}
+    parameter["wikidata_incomplete"] = "random_incomplete"
+    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
+    parameter["lm"] = "bert"
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100, "auto"]
+    parameter["tmn"] = 10
+    parameter["tmp"] = [0.5]
+    parameter["tp"] = dictio_config["template_path"]["ranking2"]
+    parameter["ts"] = 5
+    parameter["trm"] = "max"
+    parameter["apc"] = False
+    parameter["ps"] = 1
+    parameter["kbe"] = -1
+    parameter["cp"] = True
+    parameter["mmd"] = 0.8
+    if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter tmc or tmp are wrong")
+
+    #evaluation 9
+    parameter = {}
+    parameter["wikidata_incomplete"] = "random_incomplete"
+    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
+    parameter["lm"] = "bert"
+    parameter["tmc"] = [-0.05, -0.1, -0.2, -0.3, -0.4, -0.5, -0.6, -0.7, -0.8, -0.9, -1, -1.1, -1.2, -1.3, -1.4, -1.5, -1.6, -1.7, -1.8, -1.9, -2, -2.5, -3, -100, "auto"]
+    parameter["tmn"] = 10
+    parameter["tmp"] = [0.5]
+    parameter["tp"] = dictio_config["template_path"]["ranking2"]
+    parameter["ts"] = 5
+    parameter["trm"] = "max"
+    parameter["apc"] = False
+    parameter["ps"] = 1
+    parameter["kbe"] = -1
+    parameter["cp"] = True
+    parameter["mmd"] = 0.9
+    if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
+        evaluations.append(parameter)
+    else:
+        print("at least one of the paramter tmc or tmp are wrong")
 
     runtime = []
     for parameter in evaluations:

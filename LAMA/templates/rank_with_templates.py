@@ -146,9 +146,10 @@ def merge_ranking_avg(results_per_template, min_max_diff = 0.1):
 
     return [(k, v) for k, v in sorted(intermediate_rank.items(), reverse=True, key=lambda item: item[1])]
 
-def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templates,paragraphDict, trm, min_max_diff):
-
-    merged_ranking = []
+def get_ranking(tripel, label_e1, label_e2, model, entity_labels, templatesDictionary, no_templates,paragraphDict, trm, min_max_diff):
+    id_e1 = tripel[0]
+    r = tripel[1]
+    id_e2 = tripel[2]
 
     #get rankings for property and sort by confidence ranking
     templates = templatesDictionary[r]
@@ -157,20 +158,22 @@ def get_ranking(e1, r, e2, model, entity_labels, templatesDictionary, no_templat
     for template, confidence in dict(islice(templates.items(), no_templates)).items():
         #build sentence for query
 
-        if e1 == "?":
+        if label_e1 == "?":
             try:
-                paragraph = paragraphDict["http://www.wikidata.org/entity/"+e2]
+                paragraph = paragraphDict["http://www.wikidata.org/entity/"+id_e2]
             except KeyError:
                 paragraph = ""
+                print("WARNING NO CONTEXT PARAGRAPH FOUND")
             instantiated_template = template.replace("[S]","[MASK]")
-            instantiated_template = instantiated_template.replace("[O]", e2)
+            instantiated_template = instantiated_template.replace("[O]", label_e2)
         else:
             try:
-                paragraph = paragraphDict["http://www.wikidata.org/entity/"+e1]
+                paragraph = paragraphDict["http://www.wikidata.org/entity/"+id_e1]
             except KeyError:
                 paragraph = ""
+                print("WARNING NO CONTEXT PARAGRAPH FOUND")
             instantiated_template = template.replace("[O]","[MASK]")
-            instantiated_template = instantiated_template.replace("[S]", e1)
+            instantiated_template = instantiated_template.replace("[S]", label_e1)
 
         result_per_templates.append((mt.get_multi_token_results(instantiated_template, paragraph, model, entity_labels), confidence))
 

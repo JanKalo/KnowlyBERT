@@ -44,7 +44,7 @@ def execute_query(tripel, parameter, data):
                     raise Exception("Tripel is in a wrong format {}".format(tripel))
             #print("expected classes ", expected_classes)
             #print("START LAMA")
-            all_result_LM = rank_with_templates.get_ranking(label_subj, tripel[1], label_obj, data["lm_build"], data["trie"], data["prop_template"], parameter["ts"], data["paragraphs"], parameter["trm"])
+            all_result_LM = rank_with_templates.get_ranking(tripel, label_subj, label_obj, data["lm_build"], data["trie"], data["prop_template"], parameter["ts"], data["paragraphs"], parameter["trm"], parameter["mmd"])
             possible_results_LM, not_in_dictionary, errors_LM, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID = helper_functions.find_results_LM(tripel, all_result_LM, results_KG_complete, expected_classes, parameter, data)
             for error in errors_LM:
                 errors.append(error)
@@ -93,14 +93,14 @@ def execute(parameter, data):
     queries_file = open(parameter["queries_path"], "r")
     queries = []
     line = queries_file.readline().replace("\n", "")
-    #LAMA_props = ['P364', 'P1412', 'P103', 'P413', 'P166', 'P449', 'P69', 'P47', 'P54', 'P1923', 'P106', 'P102', 'P530', 'P176', 'P27', 'P407', 'P30', 'P1376', 'P108', 'P136', 'P17', 'P39', 'P264', 'P937', 'P140', 'P1303', 'P495', 'P36', 'P740', 'P19', 'P20', 'P37', 'P463', 'P101', 'P178', 'P131', 'P276', 'P127', 'P1001', 'P159']
+    LAMA_props = ['P20', 'P39', 'P937', 'P108', 'P1303', 'P361', 'P1376', 'P101', 'P413', 'P127', 'P36', 'P190', 'P364', 'P138', 'P140', 'P31', 'P27', 'P17', 'P449', 'P463', 'P37', 'P264', 'P527', 'P530', 'P407', 'P740', 'P106', 'P1001', 'P30', 'P1412', 'P159', 'P495', 'P103', 'P47', 'P136', 'P131', 'P279', 'P178', 'P176', 'P276', 'P19']
     while line != "":
         tripel = line.split(" ")
         subj = str(tripel[0]).split('/')[-1].replace('>', "")
         prop = str(tripel[1]).split('/')[-1].replace('>', "")
         obj = str(tripel[2]).split('/')[-1].replace('>', "")
-        #if prop in ["P19", "P20", "P27", "P30", "P37", "P47", "P54", "P69", "P101", "P102", "P106", "P108", "P136", "P138", "P166", "P176", "P178", "P279", "P364", "P407", "P413", "P449", "P463", "P527", "P530", "P1376", "P1412", "P1923"]:
-        if prop in data["prop_template"]:
+        #if prop in data["prop_template"]:
+        if prop in LAMA_props:
             queries.append([subj, prop, obj])
         line = queries_file.readline().replace("\n", "")
     queries_file.close()
