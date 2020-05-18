@@ -43,12 +43,14 @@ def main():
 
     # check arguments
     if not os.path.isdir(args.BENCHMARK_DIR):
-        sys.exit("ERROR: specified benchmark directory does not exist")
+        sys.exit("ERROR: Specified benchmark directory does not exist")
     if not os.path.isdir(args.EMBEDDING_DIR):
-        sys.exit("ERROR: specified embedding directory does not exist")
+        sys.exit("ERROR: Specified embedding directory does not exist")
 
     # read queries
-    query_map, query_atoms, query_propmap = query_eval.read_stdin_queries()
+    query_map, query_propmap, query_atoms, _, _ = (
+            query_eval.read_stdin_queries()
+            )
 
     # load embedding
     emb = Embedding(
@@ -60,7 +62,7 @@ def main():
 
     # for each query, get answers from embedding
     query_results = {}
-    for query in tqdm(query_map, desc="answering queries"):
+    for query in tqdm(query_map, desc="INFO: Answering queries"):
         query_results[query] = []
 
         # some assertions
@@ -103,7 +105,7 @@ def main():
                         )
 
     # save results
-    sys.stdout.write("INFO: saving results ...")
+    sys.stdout.write("INFO: Saving results ...")
     sys.stdout.flush()
     results_fn = (
             os.path.basename(os.path.normpath(args.EMBEDDING_DIR))

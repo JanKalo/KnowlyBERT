@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 def read_stdin_queries():
     # read from stdin and format queries
-    sys.stdout.write("INFO: reading queries from STDIN ...")
+    sys.stdout.write("INFO: Reading queries from STDIN ...")
     sys.stdout.flush()
     queries = sys.stdin.readlines()
     queries = list(map(lambda x: x[:-1], queries))
@@ -21,6 +21,23 @@ def read_stdin_queries():
             }, query_map
         ))
     query_atoms = {i: atoms for i, atoms in enumerate(query_atoms)}
+
+    # build query_sp and query_po index
+    query_sp = {}
+    query_po = {}
+    for query in query_map:
+        sp = query_atoms[query]["s"] + " " + query_atoms[query]["p"]
+        po = query_atoms[query]["p"] + " " + query_atoms[query]["o"]
+        if not sp.startswith("? "):
+            if sp not in query_sp:
+                query_sp[sp] = set([query])
+            else:
+                query_sp[sp].add(query)
+        if not po.endswith(" ?"):
+            if po not in query_po:
+                query_po[po] = set([query])
+            else:
+                query_po[po].add(query)
 
     # build query property map (relevant for evaluation_per_relation)
     query_propmap = {}
@@ -64,7 +81,7 @@ def read_stdin_queries():
         # stop if necessary
         if not same:
             sys.exit(
-                    "ERROR: existing query_map.json or query_propmap.json "
+                    "ERROR: Existing query_map.json or query_propmap.json "
                     "are NOT from the same queries as currently read in. "
                     "Please remove these files manually to continue."
                     )
@@ -76,12 +93,12 @@ def read_stdin_queries():
             json.dump(query_propmap, f, indent=4)
 
     # done
-    return query_map, query_atoms, query_propmap
+    return query_map, query_propmap, query_atoms, query_sp, query_po
 
 
 def load_nt(fn):
     # load triples list
-    sys.stdout.write("INFO: reading triples from {0} ...".format(fn))
+    sys.stdout.write("INFO: Reading triples from {0} ...".format(fn))
     sys.stdout.flush()
     with open(fn, "r") as f:
         triples = f.readlines()
@@ -93,18 +110,8 @@ def load_nt(fn):
             ))
     print(" {0} triples".format(len(triples)))
 
-    # build index for properties
-    sys.stdout.write("INFO: building index for properties ...")
-    sys.stdout.flush()
-    p_index = {}
-    for i, triple in enumerate(triples):
-        if triple["p"] not in p_index:
-            p_index[triple["p"]] = []
-        p_index[triple["p"]].append(i)
-    print(" {0} properties".format(len(p_index)))
-
     # done
-    return triples, p_index
+    return triples
 
 
 def main():
@@ -118,39 +125,55 @@ def main():
 
     # check arguments
     if not os.path.isfile(args.NT_FILE):
-        sys.exit("ERROR: specified .nt file does not exist")
+        sys.exit("ERROR: Specified .nt file does not exist")
 
     # read queries
-    query_map, query_atoms, query_propmap = read_stdin_queries()
+    query_map, query_propmap, query_atoms, query_sp, query_po = (
+            read_stdin_queries()
+            )
 
     # load .nt file
-    triples, p_index = load_nt(args.NT_FILE)
+    triples = load_nt(args.NT_FILE)
 
-    # for each query, get answers from triples
-    sys.stdout.write("INFO: answering queries ...")
-    sys.stdout.flush()
+    # for each triple, get query answers
     query_results = {}
-    for query in tqdm(query_map, desc="answering queries"):
-        # skip unknown properties
-        query_results[query] = []
-        if query_atoms[query]["p"] not in p_index:
-            continue
+    for triple in tqdm(triples, desc="INFO: Answering queries"):
+        # get relevant queries for this triple
+        sp = triple["s"] + " " + triple["p"]
+        po = triple["p"] + " " + triple["o"]
+        queries = set()
+        if sp in query_sp:
+            queries = queries.union(query_sp[sp])
+        if po in query_po:
+            queries = queries.union(query_po[po])
 
-        # some assertions
-        assert query_atoms[query]["s"] == "?" or query_atoms[query]["o"] == "?"
-        assert query_atoms[query]["s"] != "?" or query_atoms[query]["o"] != "?"
+        # answer each query
+        for query in queries:
+            if query not in query_results:
+                query_results[query] = []
 
-        # get answer
-        test_atom = "s" if query_atoms[query]["s"] != "?" else "o"
-        target_atom = "s" if test_atom == "o" else "o"
-        for triple in p_index[query_atoms[query]["p"]]:
-            assert query_atoms[query]["p"] == triples[triple]["p"]
-            if query_atoms[query][test_atom] == triples[triple][test_atom]:
-                query_results[query].append(triples[triple][target_atom])
-    print(" done")
+            # some assertions
+            assert (
+                    query_atoms[query]["s"] == "?" or
+                    query_atoms[query]["o"] == "?"
+                    )
+            assert (
+                    query_atoms[query]["s"] != "?" or
+                    query_atoms[query]["o"] != "?"
+                    )
+
+            # get answer
+            test_atom = "s" if query_atoms[query]["s"] != "?" else "o"
+            target_atom = "s" if test_atom == "o" else "o"
+            query_results[query].append(triple[target_atom])
+
+    # fill in empty queries
+    for query in query_map:
+        if query not in query_results:
+            query_results[query] = []
 
     # save results
-    sys.stdout.write("INFO: saving results ...")
+    sys.stdout.write("INFO: Saving results ...")
     sys.stdout.flush()
     results_fn = os.path.splitext(os.path.basename(args.NT_FILE))[0] + ".json"
     with open(results_fn, "w") as f:

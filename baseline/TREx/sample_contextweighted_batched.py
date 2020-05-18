@@ -183,7 +183,7 @@ def process_abstract(abstract):
                     entity_uri_mask[idx_first_ent_token + i] = entity["uri"]
                 elif i > 0:
                     print(
-                            "WARNING: cannot properly mask "
+                            "WARNING: Cannot properly mask "
                             "multitoken entity, skipping this one ... "
                             )
                 else:
@@ -227,7 +227,7 @@ def sample_files_p(fns):
 
     # sample each file
     for fn in fns:
-        print("INFO: sampling {0} ...".format(fn))
+        print("INFO: Sampling {0} ...".format(fn))
         sample = sample_file(fn, sample)
 
     # done
@@ -251,7 +251,7 @@ def main():
 
     # check arguments
     if (args.batch_count < 1):
-        sys.exit("ERROR: invalid value for --batch-count")
+        sys.exit("ERROR: Invalid value for --batch-count")
 
     # check files
     for fn in args.FILES:
@@ -270,9 +270,9 @@ def main():
         sample = sample_files_p(fns_b)
 
         # classify with contextweighted2017 and get triples
-        print("INFO: contextweighted2017: classifying ...")
+        print("INFO: Contextweighted2017: Classifying ...")
         classify_inputs(relparser, sample["contextweighted_inputs"])
-        print("INFO: getting triples ...")
+        print("INFO: Getting triples ...")
         triples += get_triples(
                 sample["contextweighted_inputs"],
                 sample["entity_uri_masks"]
@@ -280,7 +280,7 @@ def main():
 
     # save triple .nt file with triples from sample
     output_fn = "ContextWeighted2017.nt"
-    print("INFO: saving triples to {0} ...".format(output_fn))
+    print("INFO: Saving triples to {0} ...".format(output_fn))
     with open(output_fn, "w") as f:
         for triple in triples:
             f.write("<{0}> <{1}> <{2}> .\n".format(

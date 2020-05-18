@@ -36,7 +36,7 @@ def sample_files_p(fns):
 
     # sample each file
     for fn in fns:
-        print("INFO: sampling {0} ...".format(fn))
+        print("INFO: Sampling {0} ...".format(fn))
         sample = sample_file(fn, sample)
 
     # done
@@ -60,7 +60,7 @@ def main():
 
     # check arguments
     if (args.processes < 1):
-        sys.exit("ERROR: invalid value for --processes")
+        sys.exit("ERROR: Invalid value for --processes")
 
     # check files
     for fn in args.FILES:
@@ -80,14 +80,14 @@ def main():
     pool.join()
 
     # getting results
-    print("INFO: getting results")
+    print("INFO: Getting results")
     samples_p = list(map(lambda x: x.get(), samples_p))
     annotators = list(map(lambda x: list(x.keys()), samples_p))
     annotators = set([ann for sublist in annotators for ann in sublist])
 
     # save triple .nt files for each annotator
     for ann in annotators:
-        print("INFO: saving {0} triples ...".format(ann))
+        print("INFO: Saving {0} triples ...".format(ann))
         with open(ann + ".nt", "w") as f:
             for sample in samples_p:
                 for triple in sample[ann]:

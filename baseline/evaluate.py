@@ -22,7 +22,7 @@ def get_entity_ids(entity_uris):
 
 def load_query_results(fn):
     # load query results
-    sys.stdout.write("INFO: reading query results {0} ...".format(fn))
+    sys.stdout.write("INFO: Reading query results {0} ...".format(fn))
     sys.stdout.flush()
     with open(fn, "r") as f:
         query_results = json.load(f)
@@ -255,7 +255,7 @@ def plot_evaluation(
         plt.xlabel("RECALL")
     else:
         raise ValueError(
-                "ERROR: invalid metric value "
+                "ERROR: Invalid metric value "
                 "(use one of {\"precision\", \"recall\"})"
                 )
     if eval_type == "per_query":
@@ -270,7 +270,7 @@ def plot_evaluation(
             plt.ylabel("RELATIONS-DIFF")
     else:
         raise ValueError(
-                "ERROR: invalid eval_type value "
+                "ERROR: Invalid eval_type value "
                 "(use one of {\"per_query\", \"per_relation\"})"
                 )
 
@@ -364,7 +364,7 @@ def evaluate(
         output_fn_prefix
         ):
     # evaluate each results_file
-    print("INFO: running {0} ({1} queries) ...".format(
+    print("INFO: Running {0} ({1} queries) ...".format(
         output_fn_prefix, len(gold_dataset)
         ))
     evaluation = {}
@@ -396,7 +396,7 @@ def evaluate(
                 }
 
     # save evaluation
-    print("INFO: saving {0} ...".format(output_fn_prefix))
+    print("INFO: Saving {0} ...".format(output_fn_prefix))
     with open(output_fn_prefix + ".json", "w") as f:
         json.dump(evaluation, f, indent=4)
     #plot_evaluation(evaluation, output_fn_prefix, "per_query", "precision")
@@ -445,34 +445,34 @@ def main():
     # check arguments
     if not os.path.isfile(args.QUERY_PROPMAP_FILE):
         sys.exit(
-                "ERROR: specified query_propmap '{0}' does not exist"
+                "ERROR: Specified query_propmap '{0}' does not exist"
                 .format(args.QUERY_PROPMAP_FILE)
                 )
     if not os.path.isfile(args.GOLD_DATASET_FILE):
         sys.exit(
-                "ERROR: specified gold_dataset results '{0}' do not exist"
+                "ERROR: Specified gold_dataset results '{0}' do not exist"
                 .format(args.GOLD_DATASET_FILE)
                 )
     if args.missing_data is not None:
         if not os.path.isfile(args.missing_data):
             sys.exit(
-                    "ERROR: specified missing_data results '{0}' do not exist"
+                    "ERROR: Specified missing_data results '{0}' do not exist"
                     .format(args.missing_data)
                     )
     else:
-        print("INFO: no missing_data results specified, continuing without.")
+        print("INFO: No missing_data results specified, continuing without.")
     if args.query_groups is not None:
         if not os.path.isfile(args.query_groups):
             sys.exit(
-                    "ERROR: specified query_groups '{0}' does not exist"
+                    "ERROR: Specified query_groups '{0}' does not exist"
                     .format(args.query_groups)
                     )
     else:
-        print("INFO: no query_groups specified, using all as one group.")
+        print("INFO: No query_groups specified, using all as one group.")
     for results_file in args.RESULTS_FILES:
         if not os.path.exists(results_file):
             sys.exit(
-                    "ERROR: specified query results '{0}' do not exist"
+                    "ERROR: Specified query results '{0}' do not exist"
                     .format(results_file)
                     )
 
