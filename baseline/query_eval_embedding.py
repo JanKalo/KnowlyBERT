@@ -69,7 +69,7 @@ def main():
 
         # get relevant ids in embedding
         test_atom = "s" if query_atoms[query]["s"] != "?" else "o"
-        predict_ent_range = range(0, emb.con.get_ent_total())
+        predict_ent_range = list(range(0, emb.con.get_ent_total()))
         predict_test_ent_range = [
                 emb.lookup_ent_id(query_atoms[query][test_atom])
                 ] * emb.con.get_ent_total()
@@ -85,14 +85,14 @@ def main():
         if test_atom == "s":
             predictions = emb.get_predict(
                     predict_test_ent_range,
-                    predict_test_rel_range,
-                    predict_ent_range
+                    predict_ent_range,
+                    predict_test_rel_range
                     )
         else:
             predictions = emb.get_predict(
                     predict_ent_range,
-                    predict_test_rel_range,
-                    predict_test_ent_range
+                    predict_test_ent_range,
+                    predict_test_rel_range
                     )
 
         # threshold "correct" triples
