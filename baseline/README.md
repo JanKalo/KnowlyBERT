@@ -33,6 +33,8 @@ We have two scripts provided to create our ContextWeighted2017.nt.
 `TREx/sample_contextweighted_parallel.py` will compute batches in parallel but will consume a lot of memory for better performance.
 `TREx/sample_contextweighted_batched.py` is more balanced w.r.t. memory consumption and performance.
 
+**IMPORTANT**: Please insert the path to your `emnlp2017-relation-extraction` folder and to the GloVe embeddings and the keras model at the beginning of the script! (Lines **9**, **18**, **23**)
+
 ```shell
 $ python3 TREx/sample_contextweighted_batched.py --batch-count 16 re-nlg_*.json
 ```
