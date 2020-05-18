@@ -293,7 +293,7 @@ def main():
     triples = get_triples(contextweighted_inputs, entity_uri_masks)
 
     # save triple .nt file with triples from sample
-    output_fn = "contextweighted2017.nt"
+    output_fn = "ContextWeighted2017.nt"
     print("INFO: saving triples to {0} ...".format(output_fn))
     with open(output_fn, "w") as f:
         for triple in triples:
