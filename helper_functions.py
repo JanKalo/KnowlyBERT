@@ -313,17 +313,17 @@ def string_results_KG_LM(parameter, query_LM, threshold, threshold_log, auto_thr
 
 def auto_calculate_threshold(results_KG, results_LM):
     #avg threshold
-    #threshold = 0
-    #count = 0
-    #for result in results_KG:
-    #    if result in results_LM:
-    #        threshold = results_LM[result][1]
-    #        count = count + 1
-    #if threshold == 0 or count == 0:
-    #    return None
-    #else:
-    #    threshold = threshold / count
-    #    return threshold
+    threshold = 0
+    count = 0
+    for result in results_KG:
+        if result in results_LM:
+            threshold = threshold + results_LM[result][1]
+            count = count + 1
+    if threshold == 0 or count == 0:
+        return None
+    else:
+        threshold = threshold / count
+        return threshold
 
     #min threshold
     #threshold = float('inf')
@@ -336,14 +336,14 @@ def auto_calculate_threshold(results_KG, results_LM):
     #    return threshold
 
     #max threshold
-    threshold = float('-inf')
-    for result in results_KG:
-        if result in results_LM and results_LM[result][1] > threshold:
-            threshold = results_LM[result][1]
-    if threshold == float('-inf'):
-        return None
-    else:
-        return threshold
+    #threshold = float('-inf')
+    #for result in results_KG:
+    #    if result in results_LM and results_LM[result][1] > threshold:
+    #        threshold = results_LM[result][1]
+    #if threshold == float('-inf'):
+    #    return None
+    #else:
+    #    return threshold
         
 
 def get_all_results(parameter, data, tripel, query_LM, results_KG, results_LM, auto_threshold, debugging):
