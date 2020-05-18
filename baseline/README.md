@@ -50,7 +50,7 @@ $ python3 query_eval.py input.nt < queries.txt
 This will create the `input.json` query results and also `query_map.json` and `query_propmap.json` which describe the queries and which are necessary for the final evaluation.
 Note that for other .nt datasets you have to use the same queries for evaluation.
 
-# Evaluating Precision & Recall for previously created .json query results
+## Evaluating Precision & Recall for previously created .json query results
 
 The script `evaluate.py` needs a few parameters to evaluate precision and recall and to plot diagrams:
 
