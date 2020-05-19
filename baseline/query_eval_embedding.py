@@ -40,6 +40,9 @@ def main():
     parser.add_argument(
             "-t", "--max-threshold", type=float, default=0.0
             )
+    parser.add_argument(
+            "-f", "--batch-count", type=int, default=100
+            )
     args = parser.parse_args()
 
     # check arguments
@@ -63,7 +66,8 @@ def main():
 
     # for each query, get answers from embedding
     query_results = {}
-    mean_prediction = None
+    num_predictions = 0
+    num_empty_queries = 0
     with tqdm(query_map, desc="INFO: Answering queries") as t:
         for query in t:
             query_results[query] = []
@@ -95,35 +99,45 @@ def main():
                     ):
                 continue
 
-            # predict
-            if test_atom == "s":
-                predictions = emb.get_predict(
-                        predict_test_ent_range,
-                        predict_ent_range,
-                        predict_test_rel_range
-                        )
-            else:
-                predictions = emb.get_predict(
-                        predict_ent_range,
-                        predict_test_ent_range,
-                        predict_test_rel_range
-                        )
-
-            # threshold "correct" triples
-            for i, prediction in enumerate(predictions):
-                if prediction <= args.max_threshold:
-                    query_results[query].append(
-                            emb.lookup_entity(predict_ent_range[i])
+            # batched prediction
+            batch_size = emb.con.get_ent_total() // args.batch_count
+            for batch in tqdm(
+                    range(0, emb.con.get_ent_total(), batch_size),
+                    desc="INFO: Batch"
+                    ):
+                batch_end = batch + batch_size
+                if test_atom == "s":
+                    predictions = emb.get_predict(
+                            predict_test_ent_range[batch:batch_end],
+                            predict_ent_range[batch:batch_end],
+                            predict_test_rel_range[batch:batch_end]
+                            )
+                else:
+                    predictions = emb.get_predict(
+                            predict_ent_range[batch:batch_end],
+                            predict_test_ent_range[batch:batch_end],
+                            predict_test_rel_range[batch:batch_end]
                             )
 
-            # print mean prediction value in postfix just for more info
-            if mean_prediction is None:
-                mean_prediction = predictions.mean()
-            else:
-                mean_prediction += predictions.mean()
-                mean_prediction /= 2.0
+                # threshold "correct" triples
+                query_empty = True
+                for i, prediction in enumerate(predictions):
+                    if prediction <= args.max_threshold:
+                        query_results[query].append(
+                                emb.lookup_entity(predict_ent_range[batch + i])
+                                )
+                        num_predictions += 1
+                        query_empty = False
+                if query_empty:
+                    num_empty_queries += 1
+
+                # DEBUG!
+                break
+
+            # print #predictions #empty_queries in postfix just for more info
             t.set_postfix_str(
-                    "Mean prediction: {0:.4f}".format(mean_prediction)
+                    "#Predictions: {0}, #Empty Queries: {1}"
+                    .format(num_predictions, num_empty_queries)
                     )
 
     # save results
