@@ -1,4 +1,4 @@
-# KnowliBERT - Hybrid Query Processing over Language Models and Knowledge Graphs
+# KnowlyBERT - Hybrid Query Processing over Language Models and Knowledge Graphs
 
 This repository contains the code which allows to reproduce our results in the paper.
 
