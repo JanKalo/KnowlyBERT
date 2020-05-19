@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 import query_eval
 
+
 # insert path to RelAlign repository code here
 sys.path.insert(0, "/home/ehler/Documents/GitHub/RelAlign")
 
@@ -62,47 +63,68 @@ def main():
 
     # for each query, get answers from embedding
     query_results = {}
-    for query in tqdm(query_map, desc="INFO: Answering queries"):
-        query_results[query] = []
+    mean_prediction = None
+    with tqdm(query_map, desc="INFO: Answering queries") as t:
+        for query in t:
+            query_results[query] = []
 
-        # some assertions
-        assert query_atoms[query]["s"] == "?" or query_atoms[query]["o"] == "?"
-        assert query_atoms[query]["s"] != "?" or query_atoms[query]["o"] != "?"
-
-        # get relevant ids in embedding
-        test_atom = "s" if query_atoms[query]["s"] != "?" else "o"
-        predict_ent_range = list(range(0, emb.con.get_ent_total()))
-        predict_test_ent_range = [
-                emb.lookup_ent_id(query_atoms[query][test_atom])
-                ] * emb.con.get_ent_total()
-        predict_test_rel_range = [
-                emb.lookup_rel_id(query_atoms[query]["p"])
-                ] * emb.con.get_ent_total()
-
-        # skip if atoms are unknown to embedding
-        if None in predict_test_ent_range or None in predict_test_rel_range:
-            continue
-
-        # predict
-        if test_atom == "s":
-            predictions = emb.get_predict(
-                    predict_test_ent_range,
-                    predict_ent_range,
-                    predict_test_rel_range
+            # some assertions
+            assert (
+                    query_atoms[query]["s"] == "?" or
+                    query_atoms[query]["o"] == "?"
                     )
-        else:
-            predictions = emb.get_predict(
-                    predict_ent_range,
-                    predict_test_ent_range,
-                    predict_test_rel_range
+            assert (
+                    query_atoms[query]["s"] != "?" or
+                    query_atoms[query]["o"] != "?"
                     )
 
-        # threshold "correct" triples
-        for i, prediction in enumerate(predictions):
-            if prediction <= args.max_threshold:
-                query_results[query].append(
-                        emb.lookup_entity(predict_ent_range[i])
+            # get relevant ids in embedding
+            test_atom = "s" if query_atoms[query]["s"] != "?" else "o"
+            predict_ent_range = list(range(0, emb.con.get_ent_total()))
+            predict_test_ent_range = [
+                    emb.lookup_ent_id(query_atoms[query][test_atom])
+                    ] * emb.con.get_ent_total()
+            predict_test_rel_range = [
+                    emb.lookup_rel_id(query_atoms[query]["p"])
+                    ] * emb.con.get_ent_total()
+
+            # skip if atoms are unknown to embedding
+            if (
+                    None in predict_test_ent_range or
+                    None in predict_test_rel_range
+                    ):
+                continue
+
+            # predict
+            if test_atom == "s":
+                predictions = emb.get_predict(
+                        predict_test_ent_range,
+                        predict_ent_range,
+                        predict_test_rel_range
                         )
+            else:
+                predictions = emb.get_predict(
+                        predict_ent_range,
+                        predict_test_ent_range,
+                        predict_test_rel_range
+                        )
+
+            # threshold "correct" triples
+            for i, prediction in enumerate(predictions):
+                if prediction <= args.max_threshold:
+                    query_results[query].append(
+                            emb.lookup_entity(predict_ent_range[i])
+                            )
+
+            # print mean prediction value in postfix just for more info
+            if mean_prediction is None:
+                mean_prediction = predictions.mean()
+            else:
+                mean_prediction += predictions.mean()
+                mean_prediction /= 2.0
+            t.set_postfix_str(
+                    "Mean prediction: {0:.4f}".format(mean_prediction)
+                    )
 
     # save results
     sys.stdout.write("INFO: Saving results ...")
