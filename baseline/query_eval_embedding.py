@@ -109,7 +109,7 @@ def main():
     sys.stdout.flush()
     results_fn = (
             os.path.basename(os.path.normpath(args.EMBEDDING_DIR))
-            + "_max-t_{0:.2f}.json".format(args.max_threshold)
+            + "_max-t_{0:.4f}.json".format(args.max_threshold)
             )
     with open(results_fn, "w") as f:
         json.dump(query_results, f, indent=4)
