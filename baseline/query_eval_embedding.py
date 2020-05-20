@@ -105,7 +105,7 @@ def main():
                 continue
 
             # batched prediction
-            batch_size = emb.con.get_ent_total() // args.batch_count
+            batch_size = -(-emb.con.get_ent_total() // args.batch_count)
             query_empty = True
             predictions = []
             for batch in tqdm(
