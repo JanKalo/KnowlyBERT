@@ -131,9 +131,6 @@ def main():
                 if query_empty:
                     num_empty_queries += 1
 
-                # DEBUG!
-                break
-
             # print #predictions #empty_queries in postfix just for more info
             t.set_postfix_str(
                     "#Predictions: {0}, #Empty Queries: {1}"
