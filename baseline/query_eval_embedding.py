@@ -101,6 +101,7 @@ def main():
 
             # batched prediction
             batch_size = emb.con.get_ent_total() // args.batch_count
+            query_empty = True
             for batch in tqdm(
                     range(0, emb.con.get_ent_total(), batch_size),
                     desc="INFO: Batch"
@@ -120,7 +121,6 @@ def main():
                             )
 
                 # threshold "correct" triples
-                query_empty = True
                 for i, prediction in enumerate(predictions):
                     if prediction <= args.max_threshold:
                         query_results[query].append(
@@ -128,10 +128,10 @@ def main():
                                 )
                         num_predictions += 1
                         query_empty = False
-                if query_empty:
-                    num_empty_queries += 1
 
             # print #predictions #empty_queries in postfix just for more info
+            if query_empty:
+                num_empty_queries += 1
             t.set_postfix_str(
                     "#Predictions: {0}, #Empty Queries: {1}"
                     .format(num_predictions, num_empty_queries)
