@@ -42,14 +42,13 @@ def execute_query(tripel, parameter, data):
                     expected_classes = data["prop_classes"][tripel[1]]["QP?"]
                 else:
                     raise Exception("Tripel is in a wrong format {}".format(tripel))
-            #print("expected classes ", expected_classes)
-            #print("START LAMA")
+            
             all_result_LM = rank_with_templates.get_ranking(tripel, label_subj, label_obj, data["lm_build"], data["trie"], data["prop_template"], parameter["ts"], data["paragraphs"], parameter["trm"], parameter["mmd"])
-            possible_results_LM, not_in_dictionary, errors_LM, dictio_label_possible_entities, status_possible_result_LM_label, status_possible_result_LM_ID = helper_functions.find_results_LM(tripel, all_result_LM, results_KG_complete, expected_classes, parameter, data)
+            possible_results_LM, errors_LM = helper_functions.find_results_LM(tripel, all_result_LM, results_KG_complete, expected_classes, parameter, data)
             for error in errors_LM:
                 errors.append(error)
 
-            #calculate threshold for log prob automatically if it is wanted
+            #calculate threshold for probability automatically if it is wanted
             threshold = None
             if "auto" in parameter["tmc"]:
                 #parameter["tmc"].remove("auto")
@@ -65,16 +64,13 @@ def execute_query(tripel, parameter, data):
             dictio_data["results_LM"] = {"all": all_result_LM, "possible": possible_results_LM}
             #current threshold for this query
             dictio_data["auto_threshold"] = threshold
-            #debugg data
-            dictio_data["debugging"] = {"not_in_dictionary": not_in_dictionary, "dictio_label_possible_entities": dictio_label_possible_entities, "status_possible_result_LM_label": status_possible_result_LM_label, "status_possible_result_LM_ID": status_possible_result_LM_ID}
         else:
             dictio_data["error"] = errors
             dictio_data["tripel"] = tripel
     except KeyboardInterrupt:
-        sys.exit("Keyboard Interrupt in process")
+        sys.exit("Keyboard Interrupt")
         return None
     except:
-        print("Exception in Process")
         traceback.print_exc(file=sys.stdout)
         if len(tripel) == 3:
             query = "{} {} {}".format(tripel[0], tripel[1], tripel[2])
@@ -89,18 +85,17 @@ def execute_query(tripel, parameter, data):
 
 #execute the hybrid system
 def execute(parameter, data):
-    #read example file for queries
+    #read queries file
     queries_file = open(parameter["queries_path"], "r")
     queries = []
     line = queries_file.readline().replace("\n", "")
-    LAMA_props = ['P20', 'P39', 'P937', 'P108', 'P1303', 'P361', 'P1376', 'P101', 'P413', 'P127', 'P36', 'P190', 'P364', 'P138', 'P140', 'P31', 'P27', 'P17', 'P449', 'P463', 'P37', 'P264', 'P527', 'P530', 'P407', 'P740', 'P106', 'P1001', 'P30', 'P1412', 'P159', 'P495', 'P103', 'P47', 'P136', 'P131', 'P279', 'P178', 'P176', 'P276', 'P19']
     while line != "":
         tripel = line.split(" ")
         subj = str(tripel[0]).split('/')[-1].replace('>', "")
         prop = str(tripel[1]).split('/')[-1].replace('>', "")
         obj = str(tripel[2]).split('/')[-1].replace('>', "")
-        #if prop in data["prop_template"]:
-        if prop in LAMA_props:
+        #queries only okay if there is a template for the property
+        if prop in data["prop_template"]:
             queries.append([subj, prop, obj])
         line = queries_file.readline().replace("\n", "")
     queries_file.close()
@@ -108,19 +103,14 @@ def execute(parameter, data):
     #build language model
     data["lm_build"] = lm.build(parameter["lm"])
 
-    results_all_processes = []
-    log = []
+    result_all_queries = []
     errors = []
     try:
         print("start hybrid system")
-        #queries = []
-        #queries.append(['?', 'P37', 'Q7411'])
         query_data = []
         retry_queries = []
         count = 0
         for tripel in queries:
-            #if count == 7:
-            #    break
             result = execute_query(tripel, parameter, data)
             if result == None:
                 sys.exit("Stop program")
@@ -137,7 +127,7 @@ def execute(parameter, data):
                 result = execute_query(tripel, parameter, data)
                 query_data.append(result)
 
-        #calculate avg threshold over all queries of the automatically calculated thresholds
+        #calculate avgerage auto threshold over all queries
         if "auto" in parameter["tmc"]:
             avg_auto_threshold = 0
             count = 0
@@ -146,7 +136,7 @@ def execute(parameter, data):
                     count = count + 1
                     avg_auto_threshold = avg_auto_threshold + result["auto_threshold"]
             if avg_auto_threshold == 0 or count == 0:
-                avg_auto_threshold = -100
+                avg_auto_threshold = float("-inf")
             else:
                 avg_auto_threshold = avg_auto_threshold / count
             parameter["tmc"].remove("auto")
@@ -159,17 +149,16 @@ def execute(parameter, data):
                 label_subj = helper_functions.find_label(result["tripel"][0], data)
                 label_obj = helper_functions.find_label(result["tripel"][2], data)
                 string_query_LM = "{} --> {} {} {}".format(result["tripel"], label_subj, result["tripel"][1], label_obj)
-                return_list = helper_functions.get_all_results(parameter, data, result["tripel"], string_query_LM, result["results_KG"], result["results_LM"], result["auto_threshold"], result["debugging"]) 
-                results_all_processes.append(return_list[0])
-                log.append(return_list[1])
+                query_results = helper_functions.get_all_results(parameter, data, result["tripel"], string_query_LM, result["results_KG"], result["results_LM"], result["auto_threshold"]) 
+                result_all_queries.append(query_results)
         
     except KeyboardInterrupt:
         print ("Keyboard interrupt in main")
-        results_all_processes = []
+        result_all_queries = []
     except:
         print("Exception in Main")
         traceback.print_exc(file=sys.stdout)
-        results_all_processes = []
+        result_all_queries = []
     finally:
         print ("Cleaning up Main")
-        return parameter, results_all_processes, log, errors
+        return parameter, result_all_queries, errors

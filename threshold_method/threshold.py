@@ -1,7 +1,7 @@
 import numpy as np
 import threshold_method.plot_histogram as histogram
 
-def find(query, results_LM, max_confusion, max_number, max_percentage):
+def find(query, results_LM, max_confusion, max_number=10, max_percentage=0.5):
     save_histogram = False
     values_confusion =  []
     count = 0
