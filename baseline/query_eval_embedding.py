@@ -2,6 +2,8 @@ import os
 import sys
 import json
 
+import numpy as np
+
 from argparse import ArgumentParser
 from tqdm import tqdm
 
@@ -38,10 +40,13 @@ def main():
             "-d", "--embedding-dimensions", type=int, default=100
             )
     parser.add_argument(
-            "-t", "--max-threshold", type=float, default=0.0
+            "-f", "--batch-count", type=int, default=100
             )
     parser.add_argument(
-            "-f", "--batch-count", type=int, default=100
+            "-k", "--top-k", type=int, default=100000
+            )
+    parser.add_argument(
+            "-t", "--max-threshold", type=float, default=-1.0
             )
     args = parser.parse_args()
 
@@ -102,34 +107,39 @@ def main():
             # batched prediction
             batch_size = emb.con.get_ent_total() // args.batch_count
             query_empty = True
+            predictions = []
             for batch in tqdm(
                     range(0, emb.con.get_ent_total(), batch_size),
                     desc="INFO: Batch"
                     ):
                 batch_end = batch + batch_size
                 if test_atom == "s":
-                    predictions = emb.get_predict(
+                    predictions = np.concatenate([predictions, emb.get_predict(
                             predict_test_ent_range[batch:batch_end],
                             predict_ent_range[batch:batch_end],
                             predict_test_rel_range[batch:batch_end]
-                            )
+                            )])
                 else:
-                    predictions = emb.get_predict(
+                    predictions = np.concatenate([predictions, emb.get_predict(
                             predict_ent_range[batch:batch_end],
                             predict_test_ent_range[batch:batch_end],
                             predict_test_rel_range[batch:batch_end]
-                            )
+                            )])
 
-                # threshold "correct" triples
-                for i, prediction in enumerate(predictions):
-                    if prediction <= args.max_threshold:
-                        query_results[query].append(
-                                emb.lookup_entity(predict_ent_range[batch + i])
-                                )
-                        num_predictions += 1
-                        query_empty = False
+            # get topk triples
+            def argsort_thresh(x):
+                idx = np.arange(x.size)[x <= args.max_threshold]
+                return idx[np.argsort(x[idx])]
+            topk_triples = list(map(
+                lambda x: emb.lookup_entity(x),
+                argsort_thresh(predictions.reshape(-1))[:args.top_k]
+                ))
+            query_results[query] += topk_triples
 
             # print #predictions #empty_queries in postfix just for more info
+            if len(topk_triples) > 0:
+                num_predictions += len(topk_triples)
+                query_empty = False
             if query_empty:
                 num_empty_queries += 1
             t.set_postfix_str(
