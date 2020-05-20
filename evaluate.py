@@ -367,7 +367,7 @@ def write_into_files(i, date_time, folder, tmc, tmp, file_evaluation, hybrid_out
     for log in list_hybrid_log:
         actu_list_hybrid_log.append(log[i])
     dictio_querynr_lm_result, popularity_scores, string_evaluation, string_eval_props, list_query_assign, perfect_queries, count_perfect_queries, percentage_perfect_queries, bad_queries, count_bad_queries, percentage_bad_queries, props_no_result, count_no_result_queries, percentage_no_result, data_amount, missing, dictio_prop_label_possible_entities = evaluate(data, hybrid_output, i)
-    file_id_lmresult = open("evaluation/{}/phil/{}_tp{}_ts{}_trm{}_tmc{}_ps{}.json".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], tmc, parameter["ps"]), "w")
+    file_id_lmresult = open("evaluation/{}/phil/{}_tp{}_ts{}_trm{}_tmc{}_ps{}_kbe{}_cp{}_mmd{}.json".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], tmc, parameter["ps"], parameter["kbe"], parameter["cp"], parameter["mmd"]), "w")
     json.dump(dictio_querynr_lm_result, file_id_lmresult)
     file_id_lmresult.close()
     file_query_groups = open("evaluation/{}/phil/{}_query_groups.json".format(folder, date_time), "w")
@@ -461,9 +461,10 @@ def handeling_output(data, parameter, hybrid_output, list_hybrid_log, list_error
     if hybrid_output != []:
         if len(parameter["tmc"]) == 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
-            folder = "{}_tp{}_ts{}_trm{}_ps{}".format(date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"])
+            tp_string = parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", "")
+            folder = "{}_tmc_tp{}_ts{}_trm{}_ps{}_kbe{}_cp{}_mmd{}".format(date_time, tp_string, parameter["ts"], parameter["trm"], parameter["ps"], parameter["kbe"], parameter["cp"], parameter["mmd"])
             os.mkdir("evaluation/{}".format(folder))
-            file_evaluation = open("evaluation/{}/eval_{}_tp{}_ts{}_trm{}_ps{}.txt".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"]), "w")
+            file_evaluation = open("evaluation/{}/eval_tmp_{}_tp{}_ts{}_trm{}_ps{}_kbe{}_cp{}_mmd{}.txt".format(folder, date_time, tp_string, parameter["ts"], parameter["trm"], parameter["ps"], parameter["kbe"], parameter["cp"], parameter["mmd"]), "w")
             
             file_evaluation.write(parameter["queries_path"]+"\n\n")
             os.mkdir("evaluation/{}/phil".format(folder))
@@ -473,9 +474,10 @@ def handeling_output(data, parameter, hybrid_output, list_hybrid_log, list_error
             file_evaluation.close()
         elif len(parameter["tmc"]) > 1 and len(parameter["tmp"]) == 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
-            folder = "{}_tmc_tp{}_ts{}_trm{}_ps{}".format(date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"])
+            tp_string = parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", "")
+            folder = "{}_tmc_tp{}_ts{}_trm{}_ps{}_kbe{}_cp{}_mmd{}".format(date_time, tp_string, parameter["ts"], parameter["trm"], parameter["ps"], parameter["kbe"], parameter["cp"], parameter["mmd"])
             os.mkdir("evaluation/{}".format(folder))
-            file_evaluation = open("evaluation/{}/eval_tmc_{}_tp{}_ts{}_trm{}_ps{}.txt".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"]), "w")
+            file_evaluation = open("evaluation/{}/eval_tmp_{}_tp{}_ts{}_trm{}_ps{}_kbe{}_cp{}_mmd{}.txt".format(folder, date_time, tp_string, parameter["ts"], parameter["trm"], parameter["ps"], parameter["kbe"], parameter["cp"], parameter["mmd"]), "w")
             
             file_evaluation.write("tmc "+str(parameter["tmc"])+"\n")
             file_evaluation.write(parameter["queries_path"]+"\n\n")
@@ -487,9 +489,10 @@ def handeling_output(data, parameter, hybrid_output, list_hybrid_log, list_error
             file_evaluation.close()
         elif len(parameter["tmc"]) == 1 and len(parameter["tmp"]) > 1:
             date_time = time.strftime("%d.%m._%H:%M:%S")
-            folder = "{}_tmp_tp{}_ts{}_trm{}_ps{}".format(date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"])
+            tp_string = parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", "")
+            folder = "{}_tmc_tp{}_ts{}_trm{}_ps{}_kbe{}_cp{}_mmd{}".format(date_time, tp_string, parameter["ts"], parameter["trm"], parameter["ps"], parameter["kbe"], parameter["cp"], parameter["mmd"])
             os.mkdir("evaluation/{}".format(folder))
-            file_evaluation = open("evaluation/{}/eval_tmp_{}_tp{}_ts{}_trm{}_ps{}.txt".format(folder, date_time, parameter["tp"].split('/')[-1].replace('.json', "").replace("templates_allEntityPairs_", "").replace("prop_sentence_","").replace("_templates", ""), parameter["ts"], parameter["trm"], parameter["ps"]), "w")
+            file_evaluation = open("evaluation/{}/eval_tmp_{}_tp{}_ts{}_trm{}_ps{}_kbe{}_cp{}_mmd{}.txt".format(folder, date_time, tp_string, parameter["ts"], parameter["trm"], parameter["ps"], parameter["kbe"], parameter["cp"], parameter["mmd"]), "w")
             
             file_evaluation.write("tmp "+str(parameter["tmp"])+"\n")
             file_evaluation.write(parameter["queries_path"]+"\n\n")
@@ -761,7 +764,7 @@ if __name__ == '__main__':
     parameter["ps"] = 1
     parameter["kbe"] = -1
     parameter["cp"] = True
-    parameter["mmd"] = 0.1
+    parameter["mmd"] = 0
     if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -777,12 +780,12 @@ if __name__ == '__main__':
     parameter["tmp"] = [0.5]
     parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 5
-    parameter["trm"] = "max"
+    parameter["trm"] = "avg"
     parameter["apc"] = False
     parameter["ps"] = 1
     parameter["kbe"] = -1
     parameter["cp"] = True
-    parameter["mmd"] = 0.2
+    parameter["mmd"] = 0.1
     if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -798,12 +801,12 @@ if __name__ == '__main__':
     parameter["tmp"] = [0.5]
     parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 5
-    parameter["trm"] = "max"
+    parameter["trm"] = "avg"
     parameter["apc"] = False
     parameter["ps"] = 1
     parameter["kbe"] = -1
     parameter["cp"] = True
-    parameter["mmd"] = 0.3
+    parameter["mmd"] = 0.2
     if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -819,12 +822,12 @@ if __name__ == '__main__':
     parameter["tmp"] = [0.5]
     parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 5
-    parameter["trm"] = "max"
+    parameter["trm"] = "avg"
     parameter["apc"] = False
     parameter["ps"] = 1
     parameter["kbe"] = -1
     parameter["cp"] = True
-    parameter["mmd"] = 0.4
+    parameter["mmd"] = 0.3
     if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -840,12 +843,12 @@ if __name__ == '__main__':
     parameter["tmp"] = [0.5]
     parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 5
-    parameter["trm"] = "max"
+    parameter["trm"] = "avg"
     parameter["apc"] = False
     parameter["ps"] = 1
     parameter["kbe"] = -1
     parameter["cp"] = True
-    parameter["mmd"] = 0.5
+    parameter["mmd"] = 0.3
     if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -861,12 +864,12 @@ if __name__ == '__main__':
     parameter["tmp"] = [0.5]
     parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 5
-    parameter["trm"] = "max"
+    parameter["trm"] = "avg"
     parameter["apc"] = False
     parameter["ps"] = 1
     parameter["kbe"] = -1
     parameter["cp"] = True
-    parameter["mmd"] = 0.6
+    parameter["mmd"] = 0.5
     if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -882,12 +885,12 @@ if __name__ == '__main__':
     parameter["tmp"] = [0.5]
     parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 5
-    parameter["trm"] = "max"
+    parameter["trm"] = "avg"
     parameter["apc"] = False
     parameter["ps"] = 1
     parameter["kbe"] = -1
     parameter["cp"] = True
-    parameter["mmd"] = 0.7
+    parameter["mmd"] = 0.6
     if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -903,12 +906,12 @@ if __name__ == '__main__':
     parameter["tmp"] = [0.5]
     parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 5
-    parameter["trm"] = "max"
+    parameter["trm"] = "avg"
     parameter["apc"] = False
     parameter["ps"] = 1
     parameter["kbe"] = -1
     parameter["cp"] = True
-    parameter["mmd"] = 0.8
+    parameter["mmd"] = 0.7
     if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
@@ -924,12 +927,12 @@ if __name__ == '__main__':
     parameter["tmp"] = [0.5]
     parameter["tp"] = dictio_config["template_path"]["ranking2"]
     parameter["ts"] = 5
-    parameter["trm"] = "max"
+    parameter["trm"] = "avg"
     parameter["apc"] = False
     parameter["ps"] = 1
     parameter["kbe"] = -1
     parameter["cp"] = True
-    parameter["mmd"] = 0.9
+    parameter["mmd"] = 0.8
     if correct_parameter(parameter["tmc"], parameter["tmp"], parameter["ts"]):
         evaluations.append(parameter)
     else:
