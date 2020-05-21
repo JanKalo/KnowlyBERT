@@ -131,7 +131,7 @@ def main():
                 idx = np.arange(x.size)[x <= args.max_threshold]
                 return idx[np.argsort(x[idx])]
             topk_triples = list(map(
-                lambda x: emb.lookup_entity(x),
+                lambda x: emb.lookup_entity(x).lstrip("<").rstrip(">"),
                 argsort_thresh(predictions.reshape(-1))[:args.top_k]
                 ))
             query_results[query] += topk_triples
@@ -152,7 +152,9 @@ def main():
     sys.stdout.flush()
     results_fn = (
             os.path.basename(os.path.normpath(args.EMBEDDING_DIR))
-            + "_max-t_{0:.4f}.json".format(args.max_threshold)
+            + "_top-k_{0}_max-t_{1:.4f}.json".format(
+                args.top_k, args.max_threshold
+                )
             )
     with open(results_fn, "w") as f:
         json.dump(query_results, f, indent=4)
