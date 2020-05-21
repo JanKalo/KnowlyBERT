@@ -1,13 +1,10 @@
 import numpy as np
-import threshold_method.plot_histogram as histogram
 
 def find(query, results_LM, max_confusion, max_number=10, max_percentage=0.5):
-    save_histogram = False
     values_confusion =  []
     count = 0
     log = ""
     for actu in results_LM:
-        #if float(results_LM[actu][1]) < max_confusion or count == max_number:
         if count == max_number:
             break
         else:
@@ -34,8 +31,6 @@ def find(query, results_LM, max_confusion, max_number=10, max_percentage=0.5):
         if i != len(values_confusion) -1:
             gaps.append((float(values_confusion[i+1]) - float(values_confusion[i])))
     log = log + "gaps array: {}\n".format(gaps)
-    if save_histogram:
-        histogram.save(query, values_confusion, gaps)
     max_gap = np.amin(gaps)
     index = gaps.index(max_gap)
     log = log + "max gap: {}, at index: {}\n".format(max_gap, index)
