@@ -5,7 +5,7 @@ This repository contains the code which allows to reproduce our results in the p
 ## System Requirements
 - Linux
 - minimum 32GB RAM
-- a CUDA-enabled GPU with at least 11GB memory (the software runs also on CPU, but the training is extremely slow)
+- a CUDA-enabled GPU with at least 11GB memory (the software runs also on CPU, but it is extremely slow)
 
 ## Dependencies
 - Python3
