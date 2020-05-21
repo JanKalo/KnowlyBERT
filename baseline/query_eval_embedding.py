@@ -212,6 +212,10 @@ def main():
                     predict_ent_range
                     ))
 
+            # skip if there are no entities in range to predict
+            if len(predict_ent_range) == 0:
+                continue
+
             # create test ranges
             predict_test_rel_range = [rel_id] * len(predict_ent_range)
             predict_test_ent_range = [test_ent_id] * len(predict_ent_range)
