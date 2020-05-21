@@ -39,20 +39,31 @@ def handeling_output(data, parameter, result_all_queries, list_errors):
             json.dump(dictio_querynr_lm_result, file_id_lmresult)
             file_id_lmresult.close()
             if not os.path.exists("evaluation/{}/{}_query_groups.json".format(folder, date_time)):
-                obj_subj_query_groups_file = open("/home/kalo/conferences/iswc2020/data/eval_querytype.json", "r")
-                obj_subj_query_groups = json.load(obj_subj_query_groups_file)
-                obj_subj_query_groups_file.close()
+                obj_subj_query_groups = data["query_groups"]
                 final_query_groups = {}
                 final_query_groups["all"] = list(dictio_querynr_lm_result.keys())
                 final_query_groups["object"] = []
                 final_query_groups["subject"] = []
+                final_query_groups["single"] = []
+                final_query_groups["multi"] = []
+                final_query_groups["1-1"] = []
+                final_query_groups["1-n"] = []
+                final_query_groups["n-m"] = []
                 for ID in final_query_groups["all"]:
                     if ID in obj_subj_query_groups["object"]:
                         final_query_groups["object"].append(ID)
-                    elif ID in obj_subj_query_groups["subject"]:
+                    if ID in obj_subj_query_groups["subject"]:
                         final_query_groups["subject"].append(ID)
-                    else:
-                        print("ERROR")
+                    if ID in obj_subj_query_groups["single"]:
+                        final_query_groups["single"].append(ID)
+                    if ID in obj_subj_query_groups["multi"]:
+                        final_query_groups["multi"].append(ID)
+                    if ID in obj_subj_query_groups["1-1"]:
+                        final_query_groups["1-1"].append(ID)
+                    if ID in obj_subj_query_groups["1-n"]:
+                        final_query_groups["1-n"].append(ID)
+                    if ID in obj_subj_query_groups["n-m"]:
+                        final_query_groups["n-m"].append(ID)
                 file_query_groups = open("evaluation/{}/{}_query_groups.json".format(folder, date_time), "w")
                 json.dump(final_query_groups, file_query_groups)
                 file_query_groups.close()
@@ -237,6 +248,13 @@ def read_context_paragraphs_file(dictio_config, cp):
         print("not using context paragraphs")
         return {}
 
+def read_querygroup_file(dictio_config):
+    dictio_query_groups = {}
+    query_groups_file = open(dictio_config["query_groups_path"], "r")
+    dictio_query_groups = json.load(query_groups_file)
+    query_groups_file.close()
+    return dictio_query_groups
+
 def check_parameter(parameter):
         print("start parameter check")
         correct_parameter = True
@@ -305,6 +323,7 @@ if __name__ == '__main__':
     dictio_prop_classes = read_prop_classes_file(dictio_config)
     dictio_entity_popularity = read_entity_popularity_file(dictio_config)
     dictio_query_id = read_query_id_file(dictio_config, queries_string)
+    dictio_query_groups = read_querygroup_file(dictio_config)
 
     data = {}
     data["wikidata_subjects"] = dictio_wikidata_subjects
@@ -317,6 +336,7 @@ if __name__ == '__main__':
     data["prop_classes"] = dictio_prop_classes
     data["entity_popularity"] = dictio_entity_popularity
     data["query_id"] = dictio_query_id
+    data["query_groups"] = dictio_query_groups
     print("read all data files")
 
     
@@ -333,83 +353,7 @@ if __name__ == '__main__':
     #mmd: min max difference of probability of a label if multiple templates are used
 
     evaluations = []
-    #evaluation 1
-    parameter = {}
-    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
-    parameter["lm"] = "bert"
-    parameter["tmc"] = [float("-inf"), "auto"]
-    parameter["tp"] = dictio_config["template_path"]["ranking2"]
-    parameter["ts"] = 5
-    parameter["trm"] = "max"
-    parameter["apc"] = False
-    parameter["ps"] = 1
-    parameter["kbe"] = -1
-    parameter["cp"] = True
-    parameter["mmd"] = 0.1
-    #if check_parameter(parameter):
-    #    print("parameter correct")
-    #    evaluations.append(parameter)
-    #else:
-    ##    print("parameter not correct")
-
-    #evaluation 2
-    parameter = {}
-    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
-    parameter["lm"] = "bert"
-    parameter["tmc"] = [float("-inf"), "auto"]
-    parameter["tp"] = dictio_config["template_path"]["ranking2"]
-    parameter["ts"] = 5
-    parameter["trm"] = "max"
-    parameter["apc"] = False
-    parameter["ps"] = 1
-    parameter["kbe"] = "hole"
-    parameter["cp"] = True
-    parameter["mmd"] = 0.1
-    #if check_parameter(parameter):
-    #    print("parameter correct")
-    #    evaluations.append(parameter)
-    #else:
-    #    print("parameter not correct")
-
-    #evaluation 3
-    parameter = {}
-    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
-    parameter["lm"] = "bert"
-    parameter["tmc"] = [float("-inf"), "auto"]
-    parameter["tp"] = dictio_config["template_path"]["ranking2"]
-    parameter["ts"] = 5
-    parameter["trm"] = "max"
-    parameter["apc"] = False
-    parameter["ps"] = 1
-    parameter["kbe"] = -1
-    parameter["cp"] = True
-    parameter["mmd"] = 0.5
-    #if check_parameter(parameter):
-    #    print("parameter correct")
-    #    evaluations.append(parameter)
-    #else:
-    #    print("parameter not correct")
-
-    #evaluation 4
-    parameter = {}
-    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
-    parameter["lm"] = "bert"
-    parameter["tmc"] = [float("-inf"), "auto"]
-    parameter["tp"] = dictio_config["template_path"]["ranking2"]
-    parameter["ts"] = 5
-    parameter["trm"] = "max"
-    parameter["apc"] = False
-    parameter["ps"] = 1
-    parameter["kbe"] = "hole"
-    parameter["cp"] = True
-    parameter["mmd"] = 0.5
-    #if check_parameter(parameter):
-    #    print("parameter correct")
-    #    evaluations.append(parameter)
-    #else:
-    #    print("parameter not correct")
-
-    #evaluation 5
+    #evaluation 1 (evaluation of the paper)
     parameter = {}
     parameter["queries_path"] = dictio_config["queries_path"][queries_string]
     parameter["lm"] = "bert"
@@ -422,101 +366,25 @@ if __name__ == '__main__':
     parameter["kbe"] = -1
     parameter["cp"] = True
     parameter["mmd"] = 0.6
-    #if check_parameter(parameter):
-    #    print("parameter correct")
-    #    evaluations.append(parameter)
-    #else:
-    #    print("parameter not correct")
-
-    #evaluation 6
-    parameter = {}
-    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
-    parameter["lm"] = "bert"
-    parameter["tmc"] = [float("-inf"), "auto"]
-    parameter["tp"] = dictio_config["template_path"]["ranking2"]
-    parameter["ts"] = 5
-    parameter["trm"] = "max"
-    parameter["apc"] = False
-    parameter["ps"] = 1
-    parameter["kbe"] = "hole"
-    parameter["cp"] = True
-    parameter["mmd"] = 0.6
-    #if check_parameter(parameter):
-    #    print("parameter correct")
-    #    evaluations.append(parameter)
-    #else:
-    #    print("parameter not correct")
-
-    #evaluation 7
-    parameter = {}
-    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
-    parameter["lm"] = "bert"
-    parameter["tmc"] = [float("-inf"), "auto"]
-    parameter["tp"] = dictio_config["template_path"]["ranking2"]
-    parameter["ts"] = 5
-    parameter["trm"] = "avg"
-    parameter["apc"] = False
-    parameter["ps"] = 1
-    parameter["kbe"] = -1
-    parameter["cp"] = True
-    parameter["mmd"] = 0.7
     if check_parameter(parameter):
         print("parameter correct")
         evaluations.append(parameter)
     else:
         print("parameter not correct")
 
-    #evaluation 8
+    #evaluation 2 (scheme for more evaluations)
     parameter = {}
-    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
+    parameter["queries_path"] = None
     parameter["lm"] = "bert"
-    parameter["tmc"] = [float("-inf"), "auto"]
-    parameter["tp"] = dictio_config["template_path"]["ranking2"]
-    parameter["ts"] = 5
-    parameter["trm"] = "avg"
-    parameter["apc"] = False
-    parameter["ps"] = 1
-    parameter["kbe"] = "hole"
-    parameter["cp"] = True
-    parameter["mmd"] = 0.7
-    #if check_parameter(parameter):
-    #    print("parameter correct")
-    #    evaluations.append(parameter)
-    #else:
-    #    print("parameter not correct")
-
-    #evaluation 9
-    parameter = {}
-    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
-    parameter["lm"] = "bert"
-    parameter["tmc"] = [float("-inf"), "auto"]
-    parameter["tp"] = dictio_config["template_path"]["ranking2"]
-    parameter["ts"] = 5
-    parameter["trm"] = "avg"
-    parameter["apc"] = False
-    parameter["ps"] = 1
-    parameter["kbe"] = -1
-    parameter["cp"] = True
-    parameter["mmd"] = 0.8
-    if check_parameter(parameter):
-        print("parameter correct")
-        evaluations.append(parameter)
-    else:
-        print("parameter not correct")
-
-    #evaluation 10
-    parameter = {}
-    parameter["queries_path"] = dictio_config["queries_path"][queries_string]
-    parameter["lm"] = "bert"
-    parameter["tmc"] = [float("-inf"), "auto"]
-    parameter["tp"] = dictio_config["template_path"]["ranking2"]
-    parameter["ts"] = 5
-    parameter["trm"] = "avg"
-    parameter["apc"] = False
-    parameter["ps"] = 1
-    parameter["kbe"] = "hole"
-    parameter["cp"] = True
-    parameter["mmd"] = 0.8
+    parameter["tmc"] = [None]
+    parameter["tp"] = None
+    parameter["ts"] = None
+    parameter["trm"] = None
+    parameter["apc"] = None
+    parameter["ps"] = None
+    parameter["kbe"] = None
+    parameter["cp"] = None
+    parameter["mmd"] = None
     #if check_parameter(parameter):
     #    print("parameter correct")
     #    evaluations.append(parameter)

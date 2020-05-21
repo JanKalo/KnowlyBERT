@@ -11,4 +11,5 @@
 "entity_popularity_path": "/home/fichtel/conferences/iswc2020/data/entity_popularity.json",
 "query_id_path" : {"new": "/home/fichtel/conferences/iswc2020/data/dictio_queriesnew41_id.json"},
 "kb_embeddings": {"new": {"benchmark_path": "/data/ehler/benchmarks/wikidata_iswc2020", "embedding_path": {"hole": "/data/ehler/embeddings/tf-gpu_1.14.0rc0/wikidata_iswc2020_hole"}}},
-"paragraph_path": "/home/kalo/conferences/iswc2020/data/paragraph_dict.json"}
+"paragraph_path": "/home/kalo/conferences/iswc2020/data/paragraph_dict.json",
+"query_groups_path": "/home/kalo/conferences/iswc2020/data/eval_cardinality.json"}
