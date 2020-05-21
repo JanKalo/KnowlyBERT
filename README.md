@@ -3,22 +3,50 @@
 This repository contains the code which allows to reproduce our results in the paper.
 
 ## System Requirements
-- TODO
+- Linux
+- minimum 32GB RAM
+- a CUDA-enabled GPU with at least 11GB memory (the software runs also on CPU, but the training is extremely slow)
 
 ## Dependencies
 - Python3
 - PyPi Packages
     - matplotlib
-    - **TODO**
+    - Cython==0.29.2
+    - numpy==1.15.1
+    - torch==1.0.1
+    - pytorch-pretrained-bert==0.6.1
+    - allennlp==0.8.5
+    - spacy==2.1.8
+    - tqdm==4.26.0
+    - termcolor==1.1.0
+    - pandas==0.23.4
+    - fairseq==0.8.0
+    - colorama==0.4.1
+    - tensorflow
 
 ## FIRST STEPS
-
-### TODO
 
 ### Install Python requirements
 
 ```shell
 $ python3 -m pip install -r requirements.py
+```
+
+### Clone RelAlign Repository
+
+```shell
+$ cd kb_embeddings/
+$ git clone https://github.com/JanKalo/RelAlign.git
+$ cd ..
+```
+
+### Install LAMA
+Do not clone the LAMA repo again. Only install it as an editable package.
+
+```shell
+$ cd LAMA/
+$ pip install --editable .
+$ cd ..
 ```
 
 ## Repository Structure
@@ -45,7 +73,7 @@ This section only covers the files which are needed to reproduce the results.
 
 ### 1) get\_results.py
 
-This script saves the results of the language model to given queries and parameters of the hybrid system. The parameters can be changed in get_results.py from line 336. For each evaluation and the given parameters a result directory (e.g. *<chosen_result_directory>* = 21.05._12:34:18_tmc_tprank2_ts5_trmavg_ps1_kbe-1_cpTrue_mmd0.7) is saved to evaluation/. 
+This script saves the results of the language model to given queries and parameters of the hybrid system. The parameters can be changed in get_results.py from line 343. For each evaluation and the given parameters a result directory (e.g. *<chosen_result_directory>* = 21.05._12:34:18_tmc_tprank2_ts5_trmavg_ps1_kbe-1_cpTrue_mmd0.7) is saved to evaluation/. 
 
 ```shell
 $ python3 get_results.py
@@ -54,12 +82,15 @@ $ cd evaluation/<chosen_result_directory>/
 ### 2) baseline/evaluate.py
 
 This script evaluates the results of the language model by reading the result files in *evaluation/<chosen_result_directory>/*.
-It returns three (TODO five) files:
+It returns eight files:
 - evaluation_all.json --> all given queries
 - evaluation_object.json --> only queries based on the tripel (s, p,?x)
 - evaluation_subject.json --> only queries based on the tripel (?x, p,o)
-- evaluation_onetoken.json --> TODO
-- evaluation_multitoken.josn --> TODO
+- evaluation_single.json --> only queries with only one token results
+- evaluation_multi.json --> only queries with one AND multi token results
+- evaluation_1-1.json --> only queries with 1-1 properties
+- evaluation_1-n.json --> oonly queries with 1-n properties
+- evaluation_n-m.json --> only queries with n-m properties
 
 ```shell
 $ python3 ../baseline/evaluate.py --missing-data ..baseline/missing_data.json --query-groups query_groups.json ..baseline/query_propmap.json ..baseline/gold_dataset.json ..baseline/ContextWeighted2017.json data/
@@ -70,25 +101,5 @@ This script saves files with precision and recall values by reading the output f
 For each evaluation.json, it returns a file with average precision and recall per query and a file with the precision and recall of the properties which are used in the queries.
 
 ```shell
-$ python3 ../baseline/get_precision_recall.py evaluation_all.json evaluation_object.json evaluation_subject.json
-```
-
-## Experiments
-
-TODO
-
-### Datasets
-
-TODO
-
-### Evaluation 1
-
-```shell
-$ TODO
-```
-
-### Evaluation n
-
-```shell
-$ TODO
+$ python3 ../baseline/get_precision_recall.py evaluation_all.json evaluation_object.json evaluation_subject.json evaluation_single.json evaluation_multi.json evaluation_1-1.json evaluation_1-n.json evaluation_n-m.json
 ```
