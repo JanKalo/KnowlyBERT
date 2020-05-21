@@ -140,11 +140,14 @@ def main():
     # for type constraints in query evaluation
     # (if available)
     if classes_available:
+        sys.stdout.write("INFO: Loading classes ...")
+        sys.stdout.flush()
         ents_classes, rels_classes = get_classes(
                 args.entity_class_pickle,
                 args.subclass_dict_pickle,
                 args.prop_class_json
                 )
+        print(" done")
 
     # for each query, get answers from embedding
     query_results = {}
