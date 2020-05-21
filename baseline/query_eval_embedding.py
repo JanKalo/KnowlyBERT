@@ -182,17 +182,19 @@ def main():
             # the target relation (if classes available)
             predict_ent_range = list(range(0, emb.con.get_ent_total()))
             if classes_available:
-                # check if relation is in relation classes dict
-                # if not, return empty result set for this query
-                # and skip because there are no type constraints
-                # to filter by
-                if rel_uri not in rels_classes:
-                    continue
-
                 # checks if entities satisfy the expected classes
                 # for the head ("?PQ") or tail ("QP?") position
                 # of a relation
                 def satisfies_classes(ent_uri, rel_uri, position):
+                    # if there are no classes defined for the
+                    # entity and relation provided, just return false
+                    if (
+                            ent_uri not in ents_classes or
+                            rel_uri not in rels_classes
+                            ):
+                        return False
+
+                    # determine satisfaction by set intersection
                     ent_classes = ents_classes[ent_uri]
                     rel_classes = set(
                             rels_classes[rel_uri][position].keys()
