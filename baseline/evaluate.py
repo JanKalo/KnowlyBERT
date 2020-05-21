@@ -109,17 +109,18 @@ def evaluation_per_query(
     avg_rec = 0.0
     num_nonempty_query_results = 0
     for query_result in gold_dataset:
-        # get precision & recall values
-        per_query[query_result] = {}
-        if len(query_results[query_result]) > 0:
-            num_nonempty_query_results += 1
+        # union results with missing_data results if given
+        test = set.union(
+                query_results[query_result],
+                missing_data[query_result]
+                if missing_data is not None else set()
+                )
 
-            # union results with missing_data results if given
-            test = set.union(
-                    query_results[query_result],
-                    missing_data[query_result]
-                    if missing_data is not None else set()
-                    )
+        # get precision & recall values ONLY for non-empty
+        # union of results and missing_data
+        per_query[query_result] = {}
+        if len(test) > 0:
+            num_nonempty_query_results += 1
 
             # calculate if non-empty result set
             per_query[query_result]["precision"] = prec(
@@ -192,16 +193,17 @@ def evaluation_per_relation(
                 per_relation[prop]["precision"] = 0.0
                 per_relation[prop]["recall"] = 0.0
 
-            # sum up precision & recall values
-            if len(query_results[query_result]) > 0:
-                num_nonempty_query_results += 1
+            # union results with missing_data results if given
+            test = set.union(
+                    query_results[query_result],
+                    missing_data[query_result]
+                    if missing_data is not None else set()
+                    )
 
-                # union results with missing_data results if given
-                test = set.union(
-                        query_results[query_result],
-                        missing_data[query_result]
-                        if missing_data is not None else set()
-                        )
+            # sum up precision & recall values ONLY for non-empty
+            # union of results and missing_data
+            if len(test) > 0:
+                num_nonempty_query_results += 1
 
                 # calculate if non-empty result set
                 per_relation[prop]["precision"] += prec(
