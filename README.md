@@ -23,51 +23,55 @@ $ python3 -m pip install -r requirements.py
 
 ## Repository Structure
 
-For more information, see the README.md files located in the following subdirectories.
-
 ### /LAMA/
 
-TODO
-
-### /LM\_sentence/
-
-TODO
+This is mainly the repository of Petroni et al. (https://github.com/facebookresearch/LAMA) but there are also some scripts added and changed to enable this hybrid system: 1) multi token results of the language model 2) automatically extracted templates
 
 ### /baseline/
 
-TODO
+This directory includes the script to evaluate the results of the Laguage Model to a specific query file. It is also possible to evaluate the two baselines as a comaprison to the language model: 1) relation extraction model 2) knowledge base embedding. For more information, see the README.md file located in the directory baseline/.
 
 ### /kb\_embeddings/
 
-TODO
-
-### /prob\_distribution/
-
-TODO
+This directory includes the script for deadling with the knowledge embedding HolE to get the loss of a given tripel and calculate an average probability respecting to the loss and the language model probability of a tripel.
 
 ### /threshold\_method/
 
-TODO
-
-### /wikidata/
-
-TODO
+This directory includes the script for calculating the threshold of the language model probabilities.
 
 ## Python Files
 
-This section only covers the files located in the root of this repository.
+This section only covers the files which are needed to reproduce the results.
 
-### hybrid\_system.py
+### 1) get\_results.py
 
-TODO
+This script saves the results of the language model to given queries and parameters of the hybrid system. The parameters can be changed in get_results.py from line 336. For each evaluation and the given parameters a result directory (e.g. <chosen_result_directory> = 21.05._12:34:18_tmc_tprank2_ts5_trmavg_ps1_kbe-1_cpTrue_mmd0.7) is saved to evaluation/. 
 
-### helper\_functions.py
+```shell
+$ python3 get_results.py
+$ cd evaluation/<chosen_result_directory>
+```
+### 2) baseline/evaluate.py
 
-TODO
+This script evaluates the results of the language model by reading the result files in evaluation/<chosen_result_directory>.
+It returns tree (TODO five) files:
+- evaluation_all.json --> all given queries
+- evaluation_object.json --> only queries based on the tripel (s, p,?x)
+- evaluation_subject.json --> only queries based on the tripel (?x, p,o)
+- evaluation_onetoken.json --> TODO
+- evaluation_multitoken.josn --> TODO
 
-### evaluate.py
+```shell
+$ python3 ../baseline/evaluate.py --missing-data ..baseline/missing_data.json --query-groups query_groups.json ..baseline/query_propmap.json ..baseline/gold_dataset.json ..baseline/ContextWeighted2017.json data/
+```
+### 3) baseline/get_precision_recall.py
 
-TODO
+This script saves files with precision and recall values by reading the output files of baseline/evaluate.py.
+For each evaluation.json, it returns a file with average precision and recall per query and a file with the precision and recall of the properties which are used in the queries.
+
+```shell
+$ python3 ../baseline/get_precision_recall.py evaluation_all.json evaluation_object.json evaluation_subject.json
+```
 
 ## Experiments
 
@@ -88,4 +92,3 @@ $ TODO
 ```shell
 $ TODO
 ```
-
