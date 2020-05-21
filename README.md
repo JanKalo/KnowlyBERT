@@ -45,16 +45,16 @@ This section only covers the files which are needed to reproduce the results.
 
 ### 1) get\_results.py
 
-This script saves the results of the language model to given queries and parameters of the hybrid system. The parameters can be changed in get_results.py from line 336. For each evaluation and the given parameters a result directory (e.g. <chosen_result_directory> = 21.05._12:34:18_tmc_tprank2_ts5_trmavg_ps1_kbe-1_cpTrue_mmd0.7) is saved to evaluation/. 
+This script saves the results of the language model to given queries and parameters of the hybrid system. The parameters can be changed in get_results.py from line 336. For each evaluation and the given parameters a result directory (e.g. *<chosen_result_directory>* = 21.05._12:34:18_tmc_tprank2_ts5_trmavg_ps1_kbe-1_cpTrue_mmd0.7) is saved to evaluation/. 
 
 ```shell
 $ python3 get_results.py
-$ cd evaluation/<chosen_result_directory>
+$ cd evaluation/<chosen_result_directory>/
 ```
 ### 2) baseline/evaluate.py
 
-This script evaluates the results of the language model by reading the result files in evaluation/<chosen_result_directory>.
-It returns tree (TODO five) files:
+This script evaluates the results of the language model by reading the result files in *evaluation/<chosen_result_directory>/*.
+It returns three (TODO five) files:
 - evaluation_all.json --> all given queries
 - evaluation_object.json --> only queries based on the tripel (s, p,?x)
 - evaluation_subject.json --> only queries based on the tripel (?x, p,o)
@@ -66,7 +66,7 @@ $ python3 ../baseline/evaluate.py --missing-data ..baseline/missing_data.json --
 ```
 ### 3) baseline/get_precision_recall.py
 
-This script saves files with precision and recall values by reading the output files of baseline/evaluate.py.
+This script saves files with precision and recall values by reading the output files of *baseline/evaluate.py*.
 For each evaluation.json, it returns a file with average precision and recall per query and a file with the precision and recall of the properties which are used in the queries.
 
 ```shell
