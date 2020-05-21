@@ -194,7 +194,7 @@ def evaluation_per_relation(
                 per_relation[prop]["recall"] = 0.0
 
             # subtract results with missing_data results if given
-            test = set.union(
+            test = set.difference(
                     query_results[query_result],
                     missing_data[query_result]
                     if missing_data is not None else set()
