@@ -320,7 +320,7 @@ if __name__ == '__main__':
     print("read all data files")
 
     
-    #file_queries: path to an query file
+    #file_queries: path to a query file
     #lm: name of the Language Model(LM)
     #tmc: static threshold for log-probability (=confusion) --> automatically caluclated threshold: "auto"
     #tp: path to the templates which are used
@@ -336,7 +336,6 @@ if __name__ == '__main__':
     #evaluation 1
     parameter = {}
     parameter["queries_path"] = dictio_config["queries_path"][queries_string]
-    print(parameter["queries_path"])
     parameter["lm"] = "bert"
     parameter["tmc"] = [float("-inf"), "auto"]
     parameter["tp"] = dictio_config["template_path"]["ranking2"]
@@ -347,11 +346,11 @@ if __name__ == '__main__':
     parameter["kbe"] = -1
     parameter["cp"] = True
     parameter["mmd"] = 0.1
-    if check_parameter(parameter):
-        print("parameter correct")
-        evaluations.append(parameter)
-    else:
-        print("parameter not correct")
+    #if check_parameter(parameter):
+    #    print("parameter correct")
+    #    evaluations.append(parameter)
+    #else:
+    ##    print("parameter not correct")
 
     #evaluation 2
     parameter = {}
@@ -366,11 +365,11 @@ if __name__ == '__main__':
     parameter["kbe"] = "hole"
     parameter["cp"] = True
     parameter["mmd"] = 0.1
-    if check_parameter(parameter):
-        print("parameter correct")
-        evaluations.append(parameter)
-    else:
-        print("parameter not correct")
+    #if check_parameter(parameter):
+    #    print("parameter correct")
+    #    evaluations.append(parameter)
+    #else:
+    #    print("parameter not correct")
 
     #evaluation 3
     parameter = {}
@@ -385,11 +384,11 @@ if __name__ == '__main__':
     parameter["kbe"] = -1
     parameter["cp"] = True
     parameter["mmd"] = 0.5
-    if check_parameter(parameter):
-        print("parameter correct")
-        evaluations.append(parameter)
-    else:
-        print("parameter not correct")
+    #if check_parameter(parameter):
+    #    print("parameter correct")
+    #    evaluations.append(parameter)
+    #else:
+    #    print("parameter not correct")
 
     #evaluation 4
     parameter = {}
@@ -404,11 +403,11 @@ if __name__ == '__main__':
     parameter["kbe"] = "hole"
     parameter["cp"] = True
     parameter["mmd"] = 0.5
-    if check_parameter(parameter):
-        print("parameter correct")
-        evaluations.append(parameter)
-    else:
-        print("parameter not correct")
+    #if check_parameter(parameter):
+    #    print("parameter correct")
+    #    evaluations.append(parameter)
+    #else:
+    #    print("parameter not correct")
 
     #evaluation 5
     parameter = {}
@@ -423,11 +422,11 @@ if __name__ == '__main__':
     parameter["kbe"] = -1
     parameter["cp"] = True
     parameter["mmd"] = 0.6
-    if check_parameter(parameter):
-        print("parameter correct")
-        evaluations.append(parameter)
-    else:
-        print("parameter not correct")
+    #if check_parameter(parameter):
+    #    print("parameter correct")
+    #    evaluations.append(parameter)
+    #else:
+    #    print("parameter not correct")
 
     #evaluation 6
     parameter = {}
@@ -442,11 +441,11 @@ if __name__ == '__main__':
     parameter["kbe"] = "hole"
     parameter["cp"] = True
     parameter["mmd"] = 0.6
-    if check_parameter(parameter):
-        print("parameter correct")
-        evaluations.append(parameter)
-    else:
-        print("parameter not correct")
+    #if check_parameter(parameter):
+    #    print("parameter correct")
+    #    evaluations.append(parameter)
+    #else:
+    #    print("parameter not correct")
 
     #evaluation 7
     parameter = {}
@@ -480,11 +479,11 @@ if __name__ == '__main__':
     parameter["kbe"] = "hole"
     parameter["cp"] = True
     parameter["mmd"] = 0.7
-    if check_parameter(parameter):
-        print("parameter correct")
-        evaluations.append(parameter)
-    else:
-        print("parameter not correct")
+    #if check_parameter(parameter):
+    #    print("parameter correct")
+    #    evaluations.append(parameter)
+    #else:
+    #    print("parameter not correct")
 
     #evaluation 9
     parameter = {}
@@ -518,11 +517,11 @@ if __name__ == '__main__':
     parameter["kbe"] = "hole"
     parameter["cp"] = True
     parameter["mmd"] = 0.8
-    if check_parameter(parameter):
-        print("parameter correct")
-        evaluations.append(parameter)
-    else:
-        print("parameter not correct")
+    #if check_parameter(parameter):
+    #    print("parameter correct")
+    #    evaluations.append(parameter)
+    #else:
+    #    print("parameter not correct")
 
     runtime = []
     for parameter in evaluations:

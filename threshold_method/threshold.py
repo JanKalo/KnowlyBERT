@@ -56,37 +56,7 @@ def find(query, results_LM, max_confusion, max_number=10, max_percentage=0.5):
         
         new_values_confusion = values_confusion[:index+1]
         log = log + "new confusion array: {}\n".format(new_values_confusion)
-        #for confusion in new_values_confusion:
-        #    value = value + float(confusion)
-        #mean_value = value/len(new_values_confusion)
-        #log = log + "mean confusion: {}\n".format(mean_value)
-        #for i in range(0, len(new_values_confusion)):
-        #    if i != len(new_values_confusion) -1:
-        #        if float(new_values_confusion[i]) <= mean_value:
-        #            if new_gaps[i]/max_gap > max_percentage:
-        #                log = log + "actu confusion {} is smaller than mean confusion and gap is more than {} procent equal to max gap".format(new_values_confusion[i], max_percentage*100)
-        #                if float(values_confusion[i]) > max_confusion:
-        #                    log = log + "calculated confusion threshold ({}) is okay".format(values_confusion[i])
-        #                    return values_confusion[i], log
-        #                else:
-        #                    log = log + "calculated confusion threshold ({}) is smaller than max_confusion".format(values_confusion[i])
-        #                    return max_confusion, log
-        #            else:
-        #                log = log + "actu confusion {} is smaller than mean confusion, but max gap is proportionately bigger".format(new_values_confusion[i])
-        #                if float(values_confusion[index]) > max_confusion:
-        #                    log = log + "calculated confusion threshold ({}) is okay".format(values_confusion[index])
-        #                    return values_confusion[index], log
-        #                else:
-        #                    log = log + "calculated confusion threshold ({}) is smaller than max_confusion".format(values_confusion[index])
-         #                   return max_confusion, log
-        #log = log + "no confusion is smaller than mean confusion"
-        #if float(values_confusion[index]) > max_confusion:
-        #    log = log + "calculated confusion threshold ({}) is okay".format(values_confusion[index])
-        #    return values_confusion[index], log
-        #else:
-        #    log = log + "calculated confusion threshold ({}) is smaller than max_confusion".format(values_confusion[index])
-        #    return max_confusion, log
-        
+           
         for i in range(0, len(new_values_confusion)):
             if i != len(new_values_confusion) -1:
                 if (float(new_values_confusion[i+1]) - float(new_values_confusion[i])) <= mean_value:

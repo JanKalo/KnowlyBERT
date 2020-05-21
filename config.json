@@ -9,6 +9,6 @@
 "template_path": {"LPQAQ_mined": "/home/kalo/conferences/iswc2020/LAMA/templates/data/LPQAQ_mined.json", "LPQAQ_paraphrase": "/home/kalo/conferences/iswc2020/LAMA/templates/data/LPQAQ_paraphrase.json", "ranking2_1": "/home/fichtel/conferences/iswc2020/data/rank2_1_templates.json", "ranking2": "/home/kalo/conferences/iswc2020/LAMA/templates/data/templates_allEntityPairs_rank2.json"},
 "prop_class_path": "/home/fichtel/conferences/iswc2020/data/dictio_prop_class_instances.json",
 "entity_popularity_path": "/home/fichtel/conferences/iswc2020/data/entity_popularity.json",
-"query_id_path" : {"new": "/home/fichtel/conferences/iswc2020/data/dictio_queriesnew_id.json"},
+"query_id_path" : {"new": "/home/fichtel/conferences/iswc2020/data/dictio_queriesnew41_id.json"},
 "kb_embeddings": {"new": {"benchmark_path": "/data/ehler/benchmarks/wikidata_iswc2020", "embedding_path": {"hole": "/data/ehler/embeddings/tf-gpu_1.14.0rc0/wikidata_iswc2020_hole"}}},
 "paragraph_path": "/home/kalo/conferences/iswc2020/data/paragraph_dict.json"}
