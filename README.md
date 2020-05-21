@@ -26,7 +26,7 @@ This repository contains the code which allows to reproduce our results in the p
 
 ## FIRST STEPS
 
-### Install Python requirements
+### Install Python requirements TODO create requirements.py
 
 ```shell
 $ python3 -m pip install -r requirements.py
@@ -41,7 +41,7 @@ $ cd ..
 ```
 
 ### Install LAMA
-Do not clone the LAMA repo again. Only install it as an editable package.
+Do not clone the LAMA repository again. Only install it as an editable package.
 
 ```shell
 $ cd LAMA/
