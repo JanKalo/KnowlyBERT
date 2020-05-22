@@ -4,8 +4,8 @@ This repository contains the code which allows to reproduce our results in the p
 
 ## System Requirements
 - Linux
-- minimum 32GB RAM
-- a CUDA-enabled GPU with at least 11GB memory (the software runs also on CPU, but it is extremely slow)
+- 128GB RAM recommended
+- a CUDA-enabled GPU with at least 11GB memory (the software runs also on CPU, but it is extremely slow :/)
 
 ## Dependencies
 - Python3
@@ -53,15 +53,15 @@ $ cd ..
 
 ### /LAMA/
 
-This is mainly the repository of Petroni et al. (https://github.com/facebookresearch/LAMA) but there are also some scripts added and changed to enable this hybrid system: 1) multi token results of the language model 2) automatically extracted templates
+This is mainly the repository of Petroni et al. (https://github.com/facebookresearch/LAMA) but there are also some scripts added and edited to enable this hybrid system: 1) multi token results of the language model 2) automatically extracted templates
 
 ### /baseline/
 
-This directory includes the script to evaluate the results of the Laguage Model to a specific query file. It is also possible to evaluate the two baselines as a comaprison to the language model: 1) relation extraction model 2) knowledge base embedding. For more information, see the README.md file located in the directory baseline/.
+This directory includes the script to evaluate the results of the Laguage Model to a specific query file. It is also possible to evaluate the two baselines as a comaprison to the language model: 1) relation extraction model 2) knowledge base embedding. For more information, see the README.md file located in the directory `baseline/`.
 
 ### /kb\_embeddings/
 
-This directory includes the script for deadling with the knowledge embedding HolE to get the loss of a given tripel and calculate an average probability respecting to the loss and the language model probability of a tripel.
+This directory includes the script for the integration of the knowledge base embedding *HolE* to get the loss of a given tripel.
 
 ### /threshold\_method/
 
@@ -69,11 +69,11 @@ This directory includes the script for calculating the threshold of the language
 
 ## Python Files
 
-This section only covers the files which are needed to reproduce the results.
+This section only contains the files which are needed to reproduce the results.
 
 ### 1) get\_results.py
 
-This script saves the results of the language model to given queries and parameters of the hybrid system. The parameters can be changed in get_results.py from line 343. For each evaluation and the given parameters a result directory (e.g. *<chosen_result_directory>* = 21.05._12:34:18_tmc_tprank2_ts5_trmavg_ps1_kbe-1_cpTrue_mmd0.7) is saved to evaluation/. 
+This script saves the results of the language model to given queries and parameters of the hybrid system. The parameters can be changed in *get_results.py* starting from line 343. For each evaluation and the given parameters a result directory (e.g. `<chosen_result_directory>` = 21.05._12:34:18_tmc_tprank2_ts5_trmavg_ps1_kbe-1_cpTrue_mmd0.7) is saved to `evaluation/`. 
 
 ```shell
 $ python3 get_results.py
@@ -81,15 +81,15 @@ $ cd evaluation/<chosen_result_directory>/
 ```
 ### 2) baseline/evaluate.py
 
-This script evaluates the results of the language model by reading the result files in *evaluation/<chosen_result_directory>/*.
-It returns eight files:
+This script evaluates the results of the language model by reading the result files in `evaluation/<chosen_result_directory>/`.
+It returns the following eight files:
 - evaluation_all.json --> all given queries
-- evaluation_object.json --> only queries based on the tripel (s, p,?x)
-- evaluation_subject.json --> only queries based on the tripel (?x, p,o)
-- evaluation_single.json --> only queries with only one token results
-- evaluation_multi.json --> only queries with one AND multi token results
+- evaluation_object.json --> only queries based on the tripel (s, p, ?x)
+- evaluation_subject.json --> only queries based on the tripel (?x, p, o)
+- evaluation_single.json --> only queries with only one-token results
+- evaluation_multi.json --> only queries with one-token AND multi-token results
 - evaluation_1-1.json --> only queries with 1-1 properties
-- evaluation_1-n.json --> oonly queries with 1-n properties
+- evaluation_1-n.json --> only queries with 1-n properties
 - evaluation_n-m.json --> only queries with n-m properties
 
 ```shell
@@ -97,8 +97,8 @@ $ python3 ../baseline/evaluate.py --missing-data ..baseline/missing_data.json --
 ```
 ### 3) baseline/get_precision_recall.py
 
-This script saves files with precision and recall values by reading the output files of *baseline/evaluate.py*.
-For each evaluation.json, it returns a file with average precision and recall per query and a file with the precision and recall of the properties which are used in the queries.
+This script saves files with precision and recall values by reading the output files of `baseline/evaluate.py`.
+For each evaluation.json, it returns a file with the averaged precision and recall over all queries and a file with the precision and recall averaged over all the containing queries per property.
 
 ```shell
 $ python3 ../baseline/get_precision_recall.py evaluation_all.json evaluation_object.json evaluation_subject.json evaluation_single.json evaluation_multi.json evaluation_1-1.json evaluation_1-n.json evaluation_n-m.json
