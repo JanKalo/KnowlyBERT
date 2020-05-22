@@ -73,7 +73,7 @@ This section only contains the files which are needed to reproduce the results.
 
 ### 1) get\_results.py
 
-This script saves the results of the language model to given queries and parameters of the hybrid system. The parameters can be changed in `get\_results.py` starting from line 343. For each evaluation and the given parameters a result directory (e.g. `<chosen_result_directory>` = 21.05.\_03:18:34\_tmc\_tprank2\_ts5\_trmmax\_ps1\_kbe-1\_cpTrue\_mmd0.6) is saved to `evaluation/`. 
+This script saves the results of the language model to given queries and parameters of the hybrid system. The parameters can be changed in `get_results.py` starting from line 343. For each evaluation and the given parameters a result directory (e.g. `<chosen_result_directory>` = 21.05.\_03:18:34\_tmc\_tprank2\_ts5\_trmmax\_ps1\_kbe-1\_cpTrue\_mmd0.6) is saved to `evaluation/`. 
 
 ```shell
 $ python3 get_results.py
