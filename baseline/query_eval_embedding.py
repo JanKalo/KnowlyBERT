@@ -58,13 +58,41 @@ def get_classes(
     lines = list(map(lambda x: json.loads(x), lines))
     rel_format = "http://www.wikidata.org/prop/direct/{0}"
     rels_classes = {
-            rel_format.format(rel): classes
+            rel_format.format(rel): {
+                position: set(map(
+                    lambda x: ent_format.format(x),
+                    classes.keys()
+                    ))
+                for position, classes in positions.items()
+                }
             for line in lines
-            for rel, classes in line.items()
+            for rel, positions in line.items()
             }
 
     # done
     return ents_classes, rels_classes
+
+
+def satisfies_classes(
+        ents_classes, rels_classes,
+        ent_uri, rel_uri, position
+        ):
+    # checks if entities satisfy the expected classes
+    # for the head ("?PQ") or tail ("QP?") position
+    # of a relation
+
+    # if there are no classes defined for the
+    # entity and relation provided, just return false
+    if (
+            ent_uri not in ents_classes or
+            rel_uri not in rels_classes
+            ):
+        return False
+
+    # determine satisfaction by set intersection
+    ent_classes = ents_classes[ent_uri]
+    rel_classes = rels_classes[rel_uri][position]
+    return len(ent_classes.intersection(rel_classes)) != 0
 
 
 def main():
@@ -116,12 +144,12 @@ def main():
             not os.path.isfile(args.subclass_dict_pickle) or
             not os.path.isfile(args.prop_class_json)
             ):
+        classes_available = False
         print(
                 "WARN: No valid entity_class, subclass "
                 "or relation class dictionaries "
                 "specified, continuing without type constraints"
                 )
-        classes_available = False
 
     # read queries
     query_map, query_propmap, query_atoms, _, _ = (
@@ -180,37 +208,22 @@ def main():
 
             # filter entities to match only the expected classes of
             # the target relation (if classes available)
+            # TODO: SLOW!
             predict_ent_range = list(range(0, emb.con.get_ent_total()))
             if classes_available:
-                # checks if entities satisfy the expected classes
-                # for the head ("?PQ") or tail ("QP?") position
-                # of a relation
-                def satisfies_classes(ent_uri, rel_uri, position):
-                    # if there are no classes defined for the
-                    # entity and relation provided, just return false
-                    if (
-                            ent_uri not in ents_classes or
-                            rel_uri not in rels_classes
-                            ):
-                        return False
-
-                    # determine satisfaction by set intersection
-                    ent_classes = ents_classes[ent_uri]
-                    rel_classes = set(
-                            rels_classes[rel_uri][position].keys()
-                            )
-                    return len(ent_classes.intersection(rel_classes)) != 0
-
                 # filter entity range to predict by the relations
                 # expected classes
+                print("BEGIN FILTER")
                 predict_ent_range = list(filter(
                     lambda x: satisfies_classes(
+                        ents_classes, rels_classes,
                         emb.lookup_entity(x).lstrip("<").rstrip(">"),
                         rel_uri,
                         "QP?" if test_atom == "s" else "?PQ"
                         ),
                     predict_ent_range
                     ))
+                print("END FILTER")
 
             # skip if there are no entities in range to predict
             if len(predict_ent_range) == 0:
@@ -252,10 +265,17 @@ def main():
                 for i in range(0, emb.con.get_ent_total()):
                     # check if index is in the predict_ent_range
                     if i in predict_ent_range_set:
-                        predictions_orig += [predictions[predictions_idx]]
+                        predictions_orig = np.concatenate(
+                                [
+                                    predictions_orig,
+                                    predictions[predictions_idx]
+                                    ]
+                                )
                         predictions_idx += 1
                     else:
-                        predictions_orig += [sys.maxsize]
+                        predictions_orig = np.concatenate(
+                                [predictions_orig, sys.maxsize]
+                                )
             else:
                 predictions_orig = predictions
 
