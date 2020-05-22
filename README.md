@@ -82,7 +82,7 @@ $ cd evaluation/<chosen_result_directory>/
 ### 2) baseline/evaluate.py
 
 This script evaluates the results of the language model by reading the result files in `evaluation/<chosen_result_directory>/`.
-It returns the following eight files:
+It returns the following twelve files:
 - evaluation\_all.json --> all given queries
 - evaluation\_object.json --> only queries based on the tripel (s, p, ?x)
 - evaluation\_subject.json --> only queries based on the tripel (?x, p, o)
@@ -95,6 +95,7 @@ It returns the following eight files:
 - evaluation_cardinality-1-10.json --> only queries with two to ten results
 - evaluation_cardinality-10-100.json --> only queries with eleven to 100 results
 - evaluation_cardinality-100-inf.json --> only queries with more than 100 results
+
 ```shell
 $ python3 ../../baseline/evaluate.py --missing-data ../../baseline/missing_data.json --query-groups query_groups.json ../../baseline/query_propmap.json ../../baseline/gold_dataset.json ../../baseline/ContextWeighted2017.json ../../baseline/hole_baseline.json data/
 ```
