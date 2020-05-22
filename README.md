@@ -26,10 +26,10 @@ This repository contains the code which allows to reproduce our results in the p
 
 ## FIRST STEPS
 
-### Install Python requirements TODO create requirements.py
+### Install Python requirements
 
 ```shell
-$ python3 -m pip install -r requirements.py
+$ python3 -m pip install -r requirements.txt
 ```
 
 ### Clone RelAlign Repository
@@ -73,7 +73,7 @@ This section only contains the files which are needed to reproduce the results.
 
 ### 1) get\_results.py
 
-This script saves the results of the language model to given queries and parameters of the hybrid system. The parameters can be changed in *get\_results.py* starting from line 343. For each evaluation and the given parameters a result directory (e.g. `<chosen\_result\_directory>` = 21.05.\_03:18:34\_tmc\_tprank2\_ts5\_trmmax\_ps1\_kbe-1\_cpTrue\_mmd0.6) is saved to `evaluation/`. 
+This script saves the results of the language model to given queries and parameters of the hybrid system. The parameters can be changed in *get\_results.py* starting from line 343. For each evaluation and the given parameters a result directory (e.g. `<chosen_result_directory>` = 21.05.\_03:18:34\_tmc\_tprank2\_ts5\_trmmax\_ps1\_kbe-1\_cpTrue\_mmd0.6) is saved to `evaluation/`. 
 
 ```shell
 $ python3 get_results.py
@@ -81,7 +81,7 @@ $ cd evaluation/<chosen_result_directory>/
 ```
 ### 2) baseline/evaluate.py
 
-This script evaluates the results of the language model by reading the result files in `evaluation/<chosen\_result\_directory>/`.
+This script evaluates the results of the language model by reading the result files in `evaluation/<chosen_result_directory>/`.
 It returns the following eight files:
 - evaluation\_all.json --> all given queries
 - evaluation\_object.json --> only queries based on the tripel (s, p, ?x)
