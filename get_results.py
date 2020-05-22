@@ -49,6 +49,10 @@ def handeling_output(data, parameter, result_all_queries, list_errors):
                 final_query_groups["1-1"] = []
                 final_query_groups["1-n"] = []
                 final_query_groups["n-m"] = []
+                final_query_groups["cardinality-1"] = []
+                final_query_groups["cardinality-1-10"] = []
+                final_query_groups["cardinality-10-100"] = []
+                final_query_groups["cardinality-100-inf"] = []
                 for ID in final_query_groups["all"]:
                     if ID in obj_subj_query_groups["object"]:
                         final_query_groups["object"].append(ID)
@@ -64,6 +68,14 @@ def handeling_output(data, parameter, result_all_queries, list_errors):
                         final_query_groups["1-n"].append(ID)
                     if ID in obj_subj_query_groups["n-m"]:
                         final_query_groups["n-m"].append(ID)
+                    if ID in obj_subj_query_groups["cardinality-1"]:
+                        final_query_groups["cardinality-1"].append(ID)
+                    if ID in obj_subj_query_groups["cardinality-1-10"]:
+                        final_query_groups["cardinality-1-10"].append(ID)
+                    if ID in obj_subj_query_groups["cardinality-10-100"]:
+                        final_query_groups["cardinality-10-100"].append(ID)
+                    if ID in obj_subj_query_groups["cardinality-100-inf"]:
+                        final_query_groups["cardinality-100-inf"].append(ID)
                 file_query_groups = open("evaluation/{}/{}_query_groups.json".format(folder, date_time), "w")
                 json.dump(final_query_groups, file_query_groups)
                 file_query_groups.close()
@@ -213,7 +225,7 @@ def make_trie(words):
     return root
 
 def read_query_id_file(dictio_config, queries_string):
-    #read json file for dictio of query and ID for Phil ;)
+    #read json file for dictio of query and ID
     dictio_query_id = {}
     file_query_id = open(dictio_config["query_id_path"][queries_string], "r")
     dictio_query_id = json.load(file_query_id)
