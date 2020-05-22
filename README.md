@@ -93,7 +93,7 @@ It returns the following eight files:
 - evaluation_n-m.json --> only queries with n-m properties
 
 ```shell
-$ python3 ../baseline/evaluate.py --missing-data ..baseline/missing_data.json --query-groups query_groups.json ..baseline/query_propmap.json ..baseline/gold_dataset.json ..baseline/ContextWeighted2017.json data/
+$ python3 ../../baseline/evaluate.py --missing-data ../../baseline/missing_data.json --query-groups query_groups.json ../../baseline/query_propmap.json ../../baseline/gold_dataset.json ../../baseline/ContextWeighted2017.json data/
 ```
 ### 3) baseline/get_precision_recall.py
 
@@ -101,5 +101,5 @@ This script saves files with precision and recall values by reading the output f
 For each evaluation.json, it returns a file with the averaged precision and recall over all queries and a file with the precision and recall averaged over all the containing queries per property.
 
 ```shell
-$ python3 ../baseline/get_precision_recall.py evaluation_all.json evaluation_object.json evaluation_subject.json evaluation_single.json evaluation_multi.json evaluation_1-1.json evaluation_1-n.json evaluation_n-m.json
+$ python3 ../../baseline/get_precision_recall.py evaluation_all.json evaluation_object.json evaluation_subject.json evaluation_single.json evaluation_multi.json evaluation_1-1.json evaluation_1-n.json evaluation_n-m.json
 ```
