@@ -83,18 +83,18 @@ $ cd evaluation/<chosen_result_directory>/
 
 This script evaluates the results of the language model by reading the result files in `evaluation/<chosen_result_directory>/`.
 It returns the following twelve files:
-- evaluation\_all.json --> all given queries
-- evaluation\_object.json --> only queries based on the tripel (s, p, ?x)
-- evaluation\_subject.json --> only queries based on the tripel (?x, p, o)
-- evaluation\_single.json --> only queries with only one-token results
-- evaluation\_multi.json --> only queries with one-token AND multi-token results
-- evaluation\_1-1.json --> only queries with 1-1 properties
-- evaluation\_1-n.json --> only queries with 1-n properties
-- evaluation\_n-m.json --> only queries with n-m properties
-- evaluation_cardinality-1.json --> only queries with one results
-- evaluation_cardinality-1-10.json --> only queries with two to ten results
-- evaluation_cardinality-10-100.json --> only queries with eleven to 100 results
-- evaluation_cardinality-100-inf.json --> only queries with more than 100 results
+- evaluation\_all.json &rarr; all given queries
+- evaluation\_object.json &rarr; only queries based on the tripel (s, p, ?x)
+- evaluation\_subject.json &rarr; only queries based on the tripel (?x, p, o)
+- evaluation\_single.json &rarr; only queries with only one-token results
+- evaluation\_multi.json &rarr; only queries with one-token AND multi-token results
+- evaluation\_1-1.json &rarr; only queries with 1-1 properties
+- evaluation\_1-n.json &rarr; only queries with 1-n properties
+- evaluation\_n-m.json &rarr; only queries with n-m properties
+- evaluation_cardinality-1.json &rarr; only queries with one results
+- evaluation_cardinality-1-10.json &rarr; only queries with two to ten results
+- evaluation_cardinality-10-100.json &rarr; only queries with eleven to 100 results
+- evaluation_cardinality-100-inf.json &rarr; only queries with more than 100 results
 
 ```shell
 $ python3 ../../baseline/evaluate.py --missing-data ../../baseline/missing_data.json --query-groups query_groups.json ../../baseline/query_propmap.json ../../baseline/gold_dataset.json ../../baseline/ContextWeighted2017.json ../../baseline/hole_baseline.json data/
