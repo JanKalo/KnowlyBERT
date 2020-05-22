@@ -7,6 +7,7 @@ import numpy as np
 
 from argparse import ArgumentParser
 from tqdm import tqdm
+from multiprocessing import Pool
 
 import query_eval
 
@@ -73,6 +74,71 @@ def get_classes(
     return ents_classes, rels_classes
 
 
+# unused, too slow
+def satisfies_classes_idx_range_p(
+        ents_classes_p, rel_classes,
+        ent_uri_range, offset_p
+        ):
+    # checks if entities satisfy the expected classes
+    # for the head ("?PQ") or tail ("QP?") position
+    # of a relation and return the indexes of these
+    # entities for a specific entity range
+
+    # determine satisfaction by set intersection
+    return [
+            idx + offset_p for idx, ent_uri in enumerate(ent_uri_range)
+            if (
+                ent_uri in ents_classes_p and
+                len(ents_classes_p[ent_uri].intersection(rel_classes)) != 0
+                )
+            ]
+
+
+# unused, too slow
+def satisfies_classes_idx_range_multiprocessed(
+        ents_classes, rels_classes,
+        ent_uri_range, rel_uri, position, processes
+        ):
+    # checks if entities satisfy the expected classes
+    # for the head ("?PQ") or tail ("QP?") position
+    # of a relation and return the indexes of these
+    # entities multiprocessed
+
+    # if there are no classes defined for the
+    # relation provided, just return nothing
+    if rel_uri not in rels_classes:
+        return []
+
+    # init sampling pool
+    rel_classes = rels_classes[rel_uri][position]
+    range_size_p = -(-len(ent_uri_range) // processes)
+    ent_uri_range_p = [
+            ent_uri_range[i:i + range_size_p]
+            for i in range(0, len(ent_uri_range), range_size_p)
+            ]
+    results_p = []
+    pool = Pool(processes=processes)
+    for p in range(0, len(ent_uri_range_p)):
+        ents_classes_p = {
+                ent_uri: ents_classes[ent_uri]
+                for ent_uri in ent_uri_range_p[p]
+                if ent_uri in ents_classes
+                }
+        offset_p = p * range_size_p
+        results_p.append(pool.apply_async(
+            satisfies_classes_idx_range_p,
+            [
+                ents_classes_p, rel_classes,
+                ent_uri_range_p[p], offset_p
+                ]
+            ))
+    pool.close()
+    pool.join()
+
+    # get flattened results
+    return [x for results in results_p for x in results.get()]
+
+
 def satisfies_classes_idx_range(
         ents_classes, rels_classes,
         ent_uri_range, rel_uri, position
@@ -81,7 +147,6 @@ def satisfies_classes_idx_range(
     # for the head ("?PQ") or tail ("QP?") position
     # of a relation and return the indexes of these
     # entities
-    # TODO: multiprocessing
 
     # if there are no classes defined for the
     # relation provided, just return nothing
