@@ -73,7 +73,7 @@ This section only contains the files which are needed to reproduce the results.
 
 ### 1) get\_results.py
 
-This script saves the results of the language model to given queries and parameters of the hybrid system. The parameters can be changed in *get\_results.py* starting from line 343. For each evaluation and the given parameters a result directory (e.g. `<chosen_result_directory>` = 21.05.\_03:18:34\_tmc\_tprank2\_ts5\_trmmax\_ps1\_kbe-1\_cpTrue\_mmd0.6) is saved to `evaluation/`. 
+This script saves the results of the language model to given queries and parameters of the hybrid system. The parameters can be changed in `get\_results.py` starting from line 343. For each evaluation and the given parameters a result directory (e.g. `<chosen_result_directory>` = 21.05.\_03:18:34\_tmc\_tprank2\_ts5\_trmmax\_ps1\_kbe-1\_cpTrue\_mmd0.6) is saved to `evaluation/`. 
 
 ```shell
 $ python3 get_results.py
@@ -102,7 +102,7 @@ $ python3 ../../baseline/evaluate.py --missing-data ../../baseline/missing_data.
 ### 3) baseline/get\_precision\_recall.py
 
 This script saves files with precision and recall values by reading the output files of `baseline/evaluate.py`.
-For each evaluation.json, it returns a file with the averaged precision and recall over all queries and a file with the precision and recall averaged over all the containing queries per property.
+For each `evaluation.json`, it returns a file with the averaged precision and recall over all queries and a file with the precision and recall averaged over all the containing queries per property.
 
 ```shell
 $ python3 ../../baseline/get_precision_recall.py evaluation_all.json evaluation_object.json evaluation_subject.json evaluation_single.json evaluation_multi.json evaluation_1-1.json evaluation_1-n.json evaluation_n-m.json evaluation_cardinality-1.json evaluation_cardinality-1-10.json evaluation_cardinality-10-100.json evaluation_cardinality-100-inf.json
