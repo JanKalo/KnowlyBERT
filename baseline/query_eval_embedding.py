@@ -73,26 +73,30 @@ def get_classes(
     return ents_classes, rels_classes
 
 
-def satisfies_classes(
+def satisfies_classes_idx_range(
         ents_classes, rels_classes,
-        ent_uri, rel_uri, position
+        ent_uri_range, rel_uri, position
         ):
     # checks if entities satisfy the expected classes
     # for the head ("?PQ") or tail ("QP?") position
-    # of a relation
+    # of a relation and return the indexes of these
+    # entities
+    # TODO: multiprocessing
 
     # if there are no classes defined for the
-    # entity and relation provided, just return false
-    if (
-            ent_uri not in ents_classes or
-            rel_uri not in rels_classes
-            ):
-        return False
+    # relation provided, just return nothing
+    if rel_uri not in rels_classes:
+        return []
 
     # determine satisfaction by set intersection
-    ent_classes = ents_classes[ent_uri]
     rel_classes = rels_classes[rel_uri][position]
-    return len(ent_classes.intersection(rel_classes)) != 0
+    return [
+            idx for idx, ent_uri in enumerate(ent_uri_range)
+            if (
+                ent_uri in ents_classes and
+                len(ents_classes[ent_uri].intersection(rel_classes)) != 0
+                )
+            ]
 
 
 def main():
@@ -177,6 +181,15 @@ def main():
                 )
         print(" done")
 
+    # get entity ranges
+    sys.stdout.write("INFO: Getting entity ranges ...")
+    sys.stdout.flush()
+    ent_id_range = list(range(0, emb.con.get_ent_total()))
+    ent_uri_range = list(map(
+        lambda x: emb.lookup_entity(x).lstrip("<").rstrip(">"), ent_id_range
+        ))
+    print(" done")
+
     # for each query, get answers from embedding
     query_results = {}
     num_predictions = 0
@@ -208,22 +221,24 @@ def main():
 
             # filter entities to match only the expected classes of
             # the target relation (if classes available)
-            # TODO: SLOW!
-            predict_ent_range = list(range(0, emb.con.get_ent_total()))
             if classes_available:
                 # filter entity range to predict by the relations
                 # expected classes
-                print("BEGIN FILTER")
-                predict_ent_range = list(filter(
-                    lambda x: satisfies_classes(
+                # also keep track of the filtered indexes
+                # to be able to assign the predicted values
+                # correctly later
+                predict_ent_range = satisfies_classes_idx_range(
                         ents_classes, rels_classes,
-                        emb.lookup_entity(x).lstrip("<").rstrip(">"),
-                        rel_uri,
+                        ent_uri_range, rel_uri,
                         "QP?" if test_atom == "s" else "?PQ"
-                        ),
-                    predict_ent_range
-                    ))
-                print("END FILTER")
+                        )
+                lookup_orig_idx = {
+                        filtered_idx: orig_idx
+                        for filtered_idx, orig_idx
+                        in enumerate(predict_ent_range)
+                        }
+            else:
+                predict_ent_range = ent_id_range
 
             # skip if there are no entities in range to predict
             if len(predict_ent_range) == 0:
@@ -255,43 +270,28 @@ def main():
                             predict_test_rel_range[batch:batch_end]
                             )])
 
-            # if the predict_ent_range was filtered by type constraints,
-            # reconstruct the original shape for later argsort
-            # (this works because the range was sorted from 0 to #entities)
-            if classes_available:
-                predictions_orig = []
-                predict_ent_range_set = set(predict_ent_range)
-                predictions_idx = 0
-                for i in range(0, emb.con.get_ent_total()):
-                    # check if index is in the predict_ent_range
-                    if i in predict_ent_range_set:
-                        predictions_orig = np.concatenate(
-                                [
-                                    predictions_orig,
-                                    predictions[predictions_idx]
-                                    ]
-                                )
-                        predictions_idx += 1
-                    else:
-                        predictions_orig = np.concatenate(
-                                [predictions_orig, sys.maxsize]
-                                )
-            else:
-                predictions_orig = predictions
-
-            # get topk triples
+            # argsort predictions
             def argsort_thresh(x):
                 idx = np.arange(x.size)[x <= args.max_threshold]
                 return idx[np.argsort(x[idx])]
-            topk_triples = list(map(
+            topk_argsort = argsort_thresh(predictions.reshape(-1))[:args.top_k]
+
+            # if it was filtered by types, get the original indexes
+            if classes_available:
+                topk_argsort = list(map(
+                    lambda x: lookup_orig_idx[x], topk_argsort
+                    ))
+
+            # get topk entity result set
+            topk_entities = list(map(
                 lambda x: emb.lookup_entity(x).lstrip("<").rstrip(">"),
-                argsort_thresh(predictions_orig.reshape(-1))[:args.top_k]
+                topk_argsort
                 ))
-            query_results[query] = topk_triples
+            query_results[query] = topk_entities
 
             # print #predictions #empty_queries in postfix just for more info
-            if len(topk_triples) > 0:
-                num_predictions += len(topk_triples)
+            if len(topk_entities) > 0:
+                num_predictions += len(topk_entities)
                 query_empty = False
             if query_empty:
                 num_empty_queries += 1
