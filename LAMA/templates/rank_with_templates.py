@@ -34,42 +34,6 @@ def make_trie(words):
         current_dict[_end] = _end
     return root
 
-#TODO: delete later, method just for testing
-def get_entities(relation):
-    entityPairs = set()
-    entity2Labels = {}
-    label2Entities = {}
-    #write query to virtuoso to get entity pairs
-
-    data_virtuoso = "DRIVER={{/home/fichtel/virtodbc_r.so}};HOST=134.169.32.169:{};DATABASE=Virtuoso;UID=dba;PWD=F4B656JXqBG".format(1112)
-    cnxn_current = pyodbc.connect(data_virtuoso)
-    cnxn_current.setdecoding(pyodbc.SQL_CHAR, encoding='utf-8')
-    cnxn_current.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
-    cursor =  cnxn_current.cursor()
-    query = "sparql SELECT DISTINCT ?s ?o ?sLabel ?oLabel WHERE {?s <"+relation+"> ?o. ?s <http://www.w3.org/2000/01/rdf-schema#label> ?sLabel. ?o <http://www.w3.org/2000/01/rdf-schema#label> ?oLabel. FILTER(LANG(?sLabel)=\"en\" and LANG(?oLabel)=\"en\")}"
-    print(query)
-    cursor.execute(query)
-    while True:
-        row = cursor.fetchone()
-
-        if not row:
-            break
-
-        entityPairs.add((row.s,row.o))
-        entity2Labels[row.s] = row.sLabel
-        entity2Labels[row.o] = row.oLabel
-
-        if row.sLabel in label2Entities:
-            label2Entities[row.sLabel].append(row.s)
-        else:
-            label2Entities[row.sLabel] = [row.s]
-        if row.oLabel in label2Entities:
-            label2Entities[row.oLabel].append(row.o)
-        else:
-            label2Entities[row.oLabel] = [row.o]
-
-    return entityPairs, entity2Labels, label2Entities
-
 
 def merge_rankings_minmax(results_per_template, min_max_diff = 0.1):
     intermediate_rank = {}

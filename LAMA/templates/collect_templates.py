@@ -192,7 +192,7 @@ def get_entities_db(relation):
     label2Entities = {}
     #write query to virtuoso to get entity pairs
 
-    data_virtuoso = "DRIVER={{/home/fichtel/virtodbc_r.so}};HOST=134.169.32.169:{};DATABASE=Virtuoso;UID=dba;PWD=F4B656JXqBG".format(1112)
+    datavirtuoso = ""
     cnxn_current = pyodbc.connect(data_virtuoso)
     cnxn_current.setdecoding(pyodbc.SQL_CHAR, encoding='utf-8')
     cnxn_current.setdecoding(pyodbc.SQL_WCHAR, encoding='utf-8')
