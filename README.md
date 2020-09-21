@@ -8,7 +8,9 @@ This repository contains the code which allows to reproduce our results in the p
 - a CUDA-enabled GPU with at least 11GB memory (the software runs also on CPU, but it is extremely slow)
 
 ## Dependencies
-- Python3
+- python3.6
+- python3-pip
+- unixodbc-dev
 - PyPi Packages
     - matplotlib==3.1.2
     - cython==0.29.2
@@ -22,6 +24,9 @@ This repository contains the code which allows to reproduce our results in the p
     - pandas==0.23.4
     - fairseq==0.8.0
     - colorama==0.4.1
+    - simplejson==3.17.2
+    - pyodbc==4.0.30
+    - dill==0.2.9
     - tensorflow==1.14.0rc0 (select GPU support in `requirements.txt` manually!)
 
 ## FIRST STEPS

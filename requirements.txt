@@ -10,6 +10,9 @@ termcolor==1.1.0
 pandas==0.23.4
 fairseq==0.8.0
 colorama==0.4.1
+simplejson==3.17.2
+pyodbc==4.0.30
+dill==0.2.9
 # tensorflow: select package with or without gpu support
 tensorflow==1.14.0rc0
 #tensorflow-gpu==1.14.0rc0
