@@ -12,11 +12,11 @@ python3 ../baseline/query_eval_embedding.py --embedding-dimensions 50 --batch-co
 echo "2/4: GETTING RESULTS FROM KNOWLYBERT"
 cd ../
 python3 get_results.py
-cd evaluation/*/
 
 # evaluate results
 echo "3/4: EVALUATING RESULTS"
-python3 ../../baseline/evaluate.py --missing-data ../missing_data.new.json --query-groups query_groups.json ../query_propmap.json ../gold_dataset.json ../ContextWeighted2017.json ../wikidata_iswc2020*.json data/
+cd evaluation/*/
+python3 ../../baseline/evaluate.py --missing-data ../missing_data.new.json --query-groups *query_groups.json ../query_propmap.json ../gold_dataset.json ../ContextWeighted2017.json ../wikidata_iswc2020*.json data/
 
 # get precision-recall values
 echo "4/4: GETTING PRECISION RECALL VALUES"

@@ -102,7 +102,7 @@ It returns the following twelve files:
 - evaluation_cardinality-100-inf.json &rarr; only queries with more than 100 results
 
 ```shell
-$ python3 ../../baseline/evaluate.py --missing-data ../../baseline/missing_data.json --query-groups query_groups.json ../../baseline/query_propmap.json ../../baseline/gold_dataset.json ../../baseline/ContextWeighted2017.json ../../baseline/hole_baseline.json data/
+$ python3 ../../baseline/evaluate.py --missing-data ../../baseline/missing_data.json --query-groups *query_groups.json ../../baseline/query_propmap.json ../../baseline/gold_dataset.json ../../baseline/ContextWeighted2017.json ../../baseline/hole_baseline.json data/
 ```
 ### 3) baseline/get\_precision\_recall.py
 
