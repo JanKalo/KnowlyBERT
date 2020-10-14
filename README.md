@@ -27,7 +27,7 @@ This repository contains the code which allows to reproduce our results in the p
     - simplejson==3.17.2
     - pyodbc==4.0.30
     - dill==0.2.9
-    - tensorflow==1.14.0rc0 (select GPU support in `requirements.txt` manually!)
+    - tensorflow==1.14.0 (select GPU support in `requirements.txt` manually!)
 
 ## FIRST STEPS
 
