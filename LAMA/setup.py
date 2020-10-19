@@ -6,7 +6,7 @@
 #
 from setuptools import setup, find_packages
 
-requirements = ['Cython==0.29.2', 'numpy==1.15.1', 'torch==1.0.1', 'pytorch-pretrained-bert==0.6.1', 'allennlp==0.8.5', 'spacy==2.1.8', 'tqdm==4.26.0', 'termcolor==1.1.0', 'pandas==0.23.4', 'fairseq==0.8.0', 'scipy==1.5.2']
+requirements = ['Cython==0.29.2', 'numpy==1.15.1', 'torch==1.0.1', 'pytorch-pretrained-bert==0.6.1', 'allennlp==0.8.5', 'spacy==2.1.8', 'tqdm==4.26.0', 'termcolor==1.1.0', 'pandas==0.23.4', 'fairseq==0.8.0', 'scipy==1.5.3']
 setup(
     name = 'LAMA',
     version = '0.1.2',
