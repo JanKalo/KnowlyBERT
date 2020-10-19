@@ -13,7 +13,7 @@ import query_eval
 
 
 # insert path to RelAlign repository code here
-sys.path.insert(0, "/home/ehler/Documents/GitHub/RelAlign")
+sys.path.insert(1, "/opt/KnowlyBERT/kb_embeddings/RelAlign/")
 
 
 from thirdParty.OpenKE import models

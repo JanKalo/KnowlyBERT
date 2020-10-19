@@ -1,0 +1,35 @@
+# use ubuntu image with cuda
+FROM nvidia/cuda:11.0-base-ubuntu18.04
+
+# install dependencies
+RUN apt-get update && apt-get install -y \
+    python3.6 \
+    python3-pip \
+    git \
+    unixodbc-dev \
+    wget
+
+# prepare our system data
+RUN mkdir -p /opt/KnowlyBERT
+COPY . /opt/KnowlyBERT/
+
+# install python requirements
+WORKDIR /opt/KnowlyBERT/
+RUN python3 -m pip install -r requirements.txt
+
+# clone RelAlign repository
+WORKDIR /opt/KnowlyBERT/kb_embeddings/
+RUN git clone https://github.com/JanKalo/RelAlign.git
+WORKDIR /opt/KnowlyBERT/kb_embeddings/RelAlign/thirdParty/OpenKE/
+RUN sh make.sh
+
+# install LAMA
+WORKDIR /opt/KnowlyBERT/LAMA/
+RUN python3 -m pip install --editable .
+
+# specify volume with evaluation results
+VOLUME /opt/KnowlyBERT/evaluation
+
+# execute script for evaluation
+WORKDIR /opt/KnowlyBERT/
+CMD ["sh", "workflow_no-hole.sh"]

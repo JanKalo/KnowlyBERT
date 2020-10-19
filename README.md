@@ -29,7 +29,44 @@ This repository contains the code which allows to reproduce our results in the p
     - dill==0.2.9
     - tensorflow==1.14.0 (select GPU support in `requirements.txt` manually!)
 
+## RUN IN DOCKER
+
+We provide Dockerfiles to create a docker image with which you are able to run our code with only a few commands.
+
+### Create Docker Images
+
+There are two Dockerfiles in this repository:
+
+### `Dockerfile`
+
+Creates an image which reproduces ALL results, including the results of our HolE Embedding.
+We highly recommend to install the [NVIDIA Container Toolkit][1] for Docker to enable GPU acceleration.
+Running this image without GPU acceleration will be extremely time consuming.
+If you don't want to setup GPU acceleration, you can instead create an image without the computation of our HolE results.
+(See `Dockerfile_no-hole`)
+
+```shell
+$ docker build --file Dockerfile --tag knowlybert:all .
+$ docker run -it --volume /path/on/host:/opt/KnowlyBERT/evaluation knowlybert:all
+```
+
+Set `/path/on/host` to any non-existent location on your host-system where the container should store our evaluation results.
+
+### `Dockerfile_no-hole`
+
+Creates an image which reproduces all results, EXCEPT the results of our HolE Embedding.
+You can run this image without GPU acceleration and it should finish in a few hours.
+
+```shell
+$ docker build --file Dockerfile_no-hole --tag knowlybert:no-hole .
+$ docker run -it --volume /path/on/host:/opt/KnowlyBERT/evaluation knowlybert:no-hole
+```
+
+Set `/path/on/host` to any non-existent location on your host-system where the container should store our evaluation results.
+
 ## FIRST STEPS
+
+If you don't want to use Docker to reproduce our results, you have to manually setup the required environment.
 
 ### Install Python requirements
 
@@ -112,3 +149,5 @@ For each `evaluation.json`, it returns a file with the averaged precision and re
 ```shell
 $ python3 ../../baseline/get_precision_recall.py evaluation_all.json evaluation_object.json evaluation_subject.json evaluation_single.json evaluation_multi.json evaluation_1-1.json evaluation_1-n.json evaluation_n-m.json evaluation_cardinality-1.json evaluation_cardinality-1-10.json evaluation_cardinality-10-100.json evaluation_cardinality-100-inf.json
 ```
+
+[1]: https://github.com/NVIDIA/nvidia-docker

@@ -1,6 +1,6 @@
 import json
 import sys
-sys.path.append("/home/kalo/conferences/iswc2020/LAMA/lama")
+sys.path.insert(0, "/opt/KnowlyBERT/LAMA/lama")
 import pyodbc
 
 import options as options

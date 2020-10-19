@@ -232,7 +232,7 @@ def read_query_id_file(dictio_config, queries_string):
     file_query_id.close()
     return dictio_query_id
 
-sys.path.insert(1, "/home/fichtel/KnowliBERT/kb_embeddings/RelAlign/")
+sys.path.insert(1, "/opt/KnowlyBERT/kb_embeddings/RelAlign/")
 from thirdParty.OpenKE import models
 from embedding import Embedding
 def get_kb_embedding(dictio_config, queries_string, kbe):

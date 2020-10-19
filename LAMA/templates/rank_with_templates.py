@@ -1,6 +1,6 @@
 
 import sys
-sys.path.append("/home/kalo/conferences/iswc2020/LAMA/lama")
+sys.path.insert(0, "/opt/KnowlyBERT/LAMA/lama")
 import json
 import multi_token as mt
 from itertools import islice
