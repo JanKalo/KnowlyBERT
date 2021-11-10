@@ -15,4 +15,4 @@ pyodbc==4.0.30
 dill==0.2.9
 # tensorflow: select package with or without gpu support
 #tensorflow==1.14.0
-tensorflow-gpu==1.14.0
+tensorflow-gpu==2.5.2
